@@ -27,3 +27,5 @@ web/frontend/dist/
 
 # Internal progress logs — never pushed
 logs/
+server.*.log
+*.log

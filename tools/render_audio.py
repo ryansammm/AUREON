@@ -64,6 +64,8 @@ def build_note_events(track, tpb: int, seconds_per_tick: float) -> list:
 
 
 def track_role(track_name: str, notes: list) -> str:
+    """Infer a track's role from its name (specific roles win over generic
+    sound words, e.g. "Lead - Pluck" -> lead, "Chord - Dark Stabs" -> chord)."""
     name = (track_name or "").lower()
     if "layer" in name or "percussion" in name:
         return "drum_layers"
@@ -73,18 +75,20 @@ def track_role(track_name: str, notes: list) -> str:
         return "drum"
     if "sub" in name:
         return "sub_bass"
+    if "bass" in name:
+        return "bass"
+    if "counter" in name:
+        return "counter_lead"
+    if "lead" in name:
+        return "lead"
+    if "pad" in name:
+        return "pad"
+    if "chord" in name:
+        return "chord"
     if "stab" in name:
         return "stab"
     if "arp" in name or "pluck" in name:
         return "arp"
-    if "counter" in name:
-        return "counter_lead"
-    if "bass" in name:
-        return "bass"
-    if "pad" in name or "chord" in name:
-        return "pad"
-    if "lead" in name:
-        return "lead"
     pitches = [n[2] for n in notes]
     mean = sum(pitches) / len(pitches) if pitches else 0
     if mean < 48:
@@ -199,7 +203,18 @@ def render_to_wav(
     gain: float = 0.55,
     gains: dict = None,
     reverb: bool = True,
+    roles: list = None,
 ) -> float:
+    """Render a .mid to a stereo .wav.
+
+    Args:
+        mid_path: input MIDI file.
+        out_path: output WAV file.
+        gain: master gain.
+        gains: per-role gain overrides.
+        reverb: add the shared reverb bus (dry for stems).
+        roles: if given, only these roles are rendered (stem export).
+    """
     mid = MidiFile(str(mid_path))
     tempo = 500000
     for msg in mid.tracks[0]:
@@ -214,6 +229,8 @@ def render_to_wav(
         if not notes:
             continue
         role = track_role(track.name, notes)
+        if roles and role not in roles:
+            continue
         for start, dur, pitch, vel, channel in notes:
             freq = 440.0 * 2 ** ((pitch - 69) / 12)
             note_plans.append((start, dur, pitch, freq, vel, role))

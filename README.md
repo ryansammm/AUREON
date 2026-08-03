@@ -144,7 +144,7 @@ Copy `.env.example` → `.env` and add at least one key:
 
 | Provider | Model | Free tier | Where to get it |
 |----------|-------|-----------|-----------------|
-| Gemini | `gemini-2.5-flash` | ~1500 req/day | https://aistudio.google.com/app/apikey |
+| Gemini | `gemini-flash-latest` | ~1500 req/day | https://aistudio.google.com/app/apikey |
 | Groq | `llama-3.3-70b-versatile` | ~1000 req/day | https://console.groq.com/keys |
 
 Gemini is tried first; on failure the client falls back to Groq

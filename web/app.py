@@ -2,10 +2,13 @@
 
 Backend contract for the React frontend:
 
-- ``GET  /api/config``   -> genres (+ defaults), roles, bpm map
-- ``POST /api/generate`` -> generate + rank a composition (JSON body)
-- ``GET  /play/<file>``  -> stream a rendered WAV
-- ``GET  /download/<file>`` -> download a MIDI/WAV file
+- ``GET  /api/config``          -> genres (+ defaults), roles, bpm map
+- ``POST /api/generate``        -> generate + rank a composition (JSON body)
+- ``POST /api/generate/stream`` -> same, but streams SSE progress events
+- ``GET  /api/track/<file>``    -> download a single-role MIDI stem
+- ``POST /api/import/midi``     -> upload .mid, returns GM-mapped channel report
+- ``GET  /play/<file>``         -> stream a rendered WAV
+- ``GET  /download/<file>``     -> download a MIDI/WAV file
 - ``GET  /`` (or any non-api path) -> serve the built SPA from
   ``web/frontend/dist`` when present; otherwise a dev hint.
 
@@ -13,10 +16,15 @@ Binds to 127.0.0.1 only. Run with ``python web\\app.py`` and open
 http://127.0.0.1:8000
 """
 
+import io
+import json
+import queue
 import sys
+import threading
+import uuid
 from pathlib import Path
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, Response, jsonify, request, send_from_directory
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -61,10 +69,12 @@ def genre_defaults() -> dict:
     return out
 
 
-def _render_wav(mid_path: Path, wav_path: Path, gains: dict) -> None:
+def _render_wav(mid_path: Path, wav_path: Path, gains: dict,
+                roles: list = None, reverb: bool = True) -> None:
     from render_audio import render_to_wav
 
-    render_to_wav(mid_path, wav_path, gain=0.55, gains=gains, reverb=True)
+    render_to_wav(mid_path, wav_path, gain=0.55, gains=gains, reverb=reverb,
+                  roles=roles)
 
 
 def _serialize_notes(track) -> list:
@@ -169,19 +179,14 @@ def _run_pipeline(config, roles, key_root, mode, bpm, bars, complexity,
     return tracks, progression, plan, summary, ai_scores
 
 
-@app.route("/api/config")
-def api_config():
-    return jsonify({
-        "genres": available_genres(),
-        "genre_defaults": genre_defaults(),
-        "roles": ROLES,
-        "gain_defaults": GAIN_DEFAULTS,
-    })
+def _generate_payload(data: dict, report=None) -> dict:
+    """Run one full generation. ``report(message, pct)`` is called as stages
+    complete (used by the SSE endpoint). Raises ValueError for bad input."""
+    report = report or (lambda message, pct: None)
 
+    def step(message: str, pct: float):
+        report(message, pct)
 
-@app.route("/api/generate", methods=["POST"])
-def api_generate():
-    data = request.get_json(silent=True) or {}
     roles = [r for r in data.get("roles") or [] if r in ROLES] or ["bass"]
     key_root = data.get("key") or None
     mode = data.get("mode") or None
@@ -198,16 +203,18 @@ def api_generate():
     humanize = bool(data.get("humanize", True))
     ai_enabled = bool(data.get("ai", False))
     ai_prompt = (data.get("prompt") or "").strip() or None
+    make_stems = bool(data.get("stems", False))
     gains = {k: max(0.0, min(2.0, float(v))) for k, v in
              (data.get("gains") or {}).items() if k in GAIN_DEFAULTS}
 
     app.config["OUTPUT_DIR"].mkdir(parents=True, exist_ok=True)
     output_dir = app.config["OUTPUT_DIR"]
 
+    step("Loading genre DNA", 0.05)
     try:
         config = load_genre_config(data.get("genre") or "dubstep")
-    except Exception:
-        return jsonify({"error": "unknown genre"}), 400
+    except Exception as exc:
+        raise ValueError(f"unknown genre: {exc}") from exc
 
     key_root = key_root or config["default_key"]
     mode = mode or config["default_mode"]
@@ -225,6 +232,7 @@ def api_generate():
     ai_note = None
     ai_score_note = None
     if ai_enabled:
+        step("Asking the AI for an idea", 0.12)
         ideator = LLMIdeator(config)
         if ideator.available():
             try:
@@ -237,6 +245,7 @@ def api_generate():
             ai_note = ("AI not configured: set GEMINI_API_KEY / GROQ_API_KEY "
                        "in a .env file")
 
+    step("Designing chord progression", 0.20)
     ai_scoring = ai_enabled and ai_idea is not None and candidates > 1
     tracks, progression, plan, summary, _ai_scores = _run_pipeline(
         config, roles, key_root, mode, bpm, bars, complexity,
@@ -245,21 +254,41 @@ def api_generate():
     if ai_scoring and not _ai_scores:
         ai_score_note = "AI scoring failed, kept rule-based ranking"
 
-    base_name = f"{config['genre']}_{'-'.join(roles)}_{key_root}{mode}_seed{seed}"
+    run_id = uuid.uuid4().hex[:6]
+    base_name = (f"run{run_id}_{config['genre']}_{'-'.join(roles)}"
+                 f"_{key_root}{mode}_seed{seed}")
     mid_path = output_dir / f"{base_name}.mid"
     wav_path = output_dir / f"{base_name}.wav"
+
+    step("Exporting MIDI", 0.66)
     export_midi(
         tracks, bpm, str(mid_path),
         tempo_map=build_tempo_map(config, plan, bpm),
     )
+
+    step("Rendering master audio", 0.72)
     _render_wav(mid_path, wav_path, gains)
+
+    stems = []
+    if make_stems:
+        n_roles = max(len(tracks), 1)
+        for i, t in enumerate(tracks, start=1):
+            step(f"Rendering stem: {t.role}", 0.72 + 0.10 * i / n_roles)
+            stem_wav = output_dir / f"{base_name}_stem_{t.role}.wav"
+            _render_wav(mid_path, stem_wav, gains, roles=[t.role], reverb=False)
+            stems.append({"role": t.role, "wav": stem_wav.name})
 
     section_counts = {}
     for sb in plan:
         section_counts[sb.name] = section_counts.get(sb.name, 0) + 1
 
     candidate_entries = []
-    for item in summary[:app.config["MAX_CANDIDATE_AUDIO"]]:
+    rendered_candidates = summary[:app.config["MAX_CANDIDATE_AUDIO"]]
+    for j, item in enumerate(rendered_candidates, start=1):
+        step(
+            f"Rendering candidate {item['rank']} of {len(summary)}",
+            0.86 + 0.12 * j / max(len(rendered_candidates), 1),
+        )
         c_rank = item["rank"]
         c_seed = item["seed"]
         c_mid = output_dir / f"{base_name}_c{c_rank}_seed{c_seed}.mid"
@@ -279,7 +308,8 @@ def api_generate():
             "wav": c_wav.name,
         })
 
-    return jsonify({
+    step("Done", 1.0)
+    return {
         "genre": config["genre"],
         "key": f"{key_root} {mode}",
         "bpm": bpm,
@@ -299,6 +329,7 @@ def api_generate():
         ],
         "mid": mid_path.name,
         "wav": wav_path.name,
+        "stems": stems,
         "candidates": candidate_entries,
         "ai": {
             "enabled": ai_enabled,
@@ -306,7 +337,99 @@ def api_generate():
             "note": ai_note,
             "score_note": ai_score_note,
         },
+    }
+
+
+@app.route("/api/config")
+def api_config():
+    return jsonify({
+        "genres": available_genres(),
+        "genre_defaults": genre_defaults(),
+        "roles": ROLES,
+        "gain_defaults": GAIN_DEFAULTS,
     })
+
+
+@app.route("/api/generate", methods=["POST"])
+def api_generate():
+    data = request.get_json(silent=True) or {}
+    try:
+        return jsonify(_generate_payload(data))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@app.route("/api/generate/stream", methods=["POST"])
+def api_generate_stream():
+    """SSE variant: pushes ``step`` events (message + pct), then ``result``."""
+    data = request.get_json(silent=True) or {}
+    events = queue.Queue()
+
+    def worker():
+        try:
+            result = _generate_payload(
+                data, report=lambda m, p: events.put(("step", {"message": m,
+                                                               "pct": p}))
+            )
+            events.put(("result", result))
+        except Exception as exc:  # noqa: BLE001 - surface as SSE error
+            events.put(("error", {"error": str(exc)}))
+        finally:
+            events.put(("__end__", None))
+
+    threading.Thread(target=worker, daemon=True).start()
+
+    def gen():
+        while True:
+            kind, payload = events.get()
+            if kind == "__end__":
+                break
+            yield f"event: {kind}\ndata: {json.dumps(payload)}\n\n"
+
+    return Response(
+        gen(),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
+
+
+@app.route("/api/track/<path:filename>")
+def track_midi(filename):
+    """Download the main MIDI, or a single-role stem when ``?role=...``."""
+    src = app.config["OUTPUT_DIR"] / filename
+    if not src.is_file():
+        return jsonify({"error": "not found"}), 404
+    role = (request.args.get("role") or "").strip()
+    if not role:
+        return send_from_directory(app.config["OUTPUT_DIR"], filename,
+                                   as_attachment=True)
+
+    from mido import MidiFile
+    from render_audio import build_note_events, track_role
+
+    mid = MidiFile(str(src))
+    keep = [mid.tracks[0]] if mid.tracks else []
+    for tr in mid.tracks[1:]:
+        notes = build_note_events(tr, mid.ticks_per_beat, 1.0)
+        if track_role(tr.name, notes) == role:
+            keep.append(tr)
+    if len(keep) == 1:
+        return jsonify({"error": f"role '{role}' not found"}), 404
+    out = MidiFile(ticks_per_beat=mid.ticks_per_beat)
+    out.tracks = keep
+    buf = io.BytesIO()
+    out.save(file=buf)
+    buf.seek(0)
+    stem_name = f"{Path(filename).stem}_{role}.mid"
+    return Response(
+        buf,
+        mimetype="audio/mid",
+        headers={"Content-Disposition": f'attachment; filename="{stem_name}"'},
+    )
 
 
 @app.route("/play/<path:filename>")
@@ -317,6 +440,30 @@ def play(filename):
 @app.route("/download/<path:filename>")
 def download(filename):
     return send_from_directory(app.config["OUTPUT_DIR"], filename, as_attachment=True)
+
+
+@app.route("/api/import/midi", methods=["POST"])
+def import_midi():
+    """Analyze an uploaded .mid file and auto-assign internal plugins from GM."""
+    from gm_map import analyze_midi
+
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return jsonify({"error": "missing 'file' field"}), 400
+    name = f.filename.lower()
+    if not name.endswith((".mid", ".midi")):
+        return jsonify({"error": "only .mid / .midi files are supported"}), 400
+    tmp = app.config["OUTPUT_DIR"] / f"import_{uuid.uuid4().hex[:8]}.mid"
+    tmp.parent.mkdir(parents=True, exist_ok=True)
+    f.save(str(tmp))
+    try:
+        report = analyze_midi(tmp)
+    except Exception as exc:  # noqa: BLE001 - surface parse errors to client
+        return jsonify({"error": f"could not parse MIDI: {exc}"}), 422
+    finally:
+        tmp.unlink(missing_ok=True)
+    report["filename"] = f.filename
+    return jsonify(report)
 
 
 @app.route("/", defaults={"path": ""})

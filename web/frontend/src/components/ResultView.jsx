@@ -1,20 +1,10 @@
-import { midiUrl, wavUrl } from '../api'
+import { midiUrl, trackMidiUrl, wavUrl } from '../api'
+import { downloadProject } from '../history'
+import { roleColor, roleLabel } from '../roles'
 import WaveformPlayer from './WaveformPlayer'
 import PianoRoll from './PianoRoll'
 import Candidates from './Candidates'
-
-const ROLE_COLORS = {
-  bass: '#7dd3fc',
-  lead: '#ff7a1a',
-  chord: '#a78bfa',
-  pad: '#34d399',
-  arp: '#f472b6',
-  stab: '#fbbf24',
-  sub_bass: '#22d3ee',
-  counter_lead: '#fb7185',
-  drum: '#e2e8f0',
-  drum_layers: '#94a3b8',
-}
+import MixerPlayer from './MixerPlayer'
 
 const Chip = ({ children, color = '#ffb25e' }) => (
   <span
@@ -25,10 +15,11 @@ const Chip = ({ children, color = '#ffb25e' }) => (
   </span>
 )
 
-export default function ResultView({ result, onNew }) {
+export default function ResultView({ result, params, onNew }) {
   const r = result
   const ai = r.ai || {}
   const totalNotes = r.tracks.reduce((s, t) => s + t.notes, 0)
+  const hasPianoData = r.tracks.some((t) => Array.isArray(t.midi) && t.midi.length)
 
   return (
     <div className="fade-up space-y-6">
@@ -45,6 +36,12 @@ export default function ResultView({ result, onNew }) {
             </div>
           </div>
           <div className="flex gap-2">
+            <button
+              className="glass rounded-lg px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-[#ff7a1a]/60 hover:text-[#ffb25e]"
+              onClick={() => downloadProject(params, r)}
+            >
+              💾 Save project
+            </button>
             <a
               className="glass rounded-lg px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-[#ff7a1a]/60 hover:text-[#ffb25e]"
               href={wavUrl(r.wav)}
@@ -135,13 +132,20 @@ export default function ResultView({ result, onNew }) {
         <WaveformPlayer file={r.wav} accent="#ff7a1a" height={110} autoLabel="Master · WAV" />
       </div>
 
+      {/* ─── Stem mixer ─── */}
+      {r.stems?.length > 0 && (
+        <MixerPlayer stems={r.stems} />
+      )}
+
       {/* ─── Piano roll ─── */}
-      <PianoRoll
-        tracks={r.tracks}
-        bpm={r.bpm}
-        totalBeats={r.bars * 4}
-        height={360}
-      />
+      {hasPianoData && (
+        <PianoRoll
+          tracks={r.tracks}
+          bpm={r.bpm}
+          totalBeats={r.bars * 4}
+          height={360}
+        />
+      )}
 
       {/* ─── Tracks ─── */}
       <div className="glass rounded-2xl p-5">
@@ -154,7 +158,8 @@ export default function ResultView({ result, onNew }) {
               <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
                 <th className="pb-2 pr-4">Role</th>
                 <th className="pb-2 pr-4">Preset</th>
-                <th className="pb-2">Notes</th>
+                <th className="pb-2 pr-4">Notes</th>
+                <th className="pb-2">MIDI</th>
               </tr>
             </thead>
             <tbody>
@@ -163,13 +168,22 @@ export default function ResultView({ result, onNew }) {
                   <td className="py-2 pr-4">
                     <span
                       className="inline-block h-2.5 w-2.5 rounded-full"
-                      style={{ background: ROLE_COLORS[t.role] || '#fff' }}
+                      style={{ background: roleColor(t.role) }}
                     />
-                    <span className="ml-2 font-semibold">{t.role.replace(/_/g, ' ')}</span>
+                    <span className="ml-2 font-semibold">{roleLabel(t.role)}</span>
                   </td>
                   <td className="py-2 pr-4 text-slate-400">{t.preset}</td>
-                  <td className="py-2 tabular-nums text-slate-400">
+                  <td className="py-2 pr-4 tabular-nums text-slate-400">
                     {t.notes.toLocaleString()}
+                  </td>
+                  <td className="py-2">
+                    <a
+                      className="text-xs font-semibold text-slate-400 transition hover:text-[#ffb25e]"
+                      href={trackMidiUrl(r.mid, t.role)}
+                      download
+                    >
+                      ↓ download
+                    </a>
                   </td>
                 </tr>
               ))}

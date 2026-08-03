@@ -5,7 +5,8 @@ dependencies). API keys are read from environment variables (or a local
 ``.env`` file that is git-ignored) and are never logged.
 
 Providers and default models (free tiers as of mid-2026):
-- Gemini: ``gemini-2.5-flash`` (~1.5k requests/day free).
+- Gemini: ``gemini-flash-latest`` (alias to the newest flash; older names like
+  ``gemini-2.5-flash`` are 404 for new accounts, so we use the alias).
 - Groq: ``llama-3.3-70b-versatile`` (~1k requests/day free).
 
 All calls are optional for the engine: when no key is configured, the AI
@@ -19,7 +20,7 @@ import requests
 
 GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models"
 GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
-DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
+DEFAULT_GEMINI_MODEL = "gemini-flash-latest"
 DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
 REQUEST_TIMEOUT = 60.0
 

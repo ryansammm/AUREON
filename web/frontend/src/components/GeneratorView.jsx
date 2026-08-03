@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   KEY_NAMES,
   MODES,
@@ -65,6 +65,39 @@ export default function GeneratorView({ config, onGenerate, error, initial }) {
   const [humanize, setHumanize] = useState(initial?.humanize ?? true)
   const [ai, setAi] = useState(initial?.ai ?? false)
   const [prompt, setPrompt] = useState(initial?.prompt || '')
+  const fileRef = useRef(null)
+
+  const applyParams = (p) => {
+    if (!p) return
+    if (config.genres.includes(p.genre)) setGenre(p.genre)
+    if (Array.isArray(p.roles)) setRoles(p.roles.filter((r) => config.roles.includes(r)))
+    if (typeof p.key === 'string') setKey(p.key)
+    if (p.mode === 'minor' || p.mode === 'major') setMode(p.mode)
+    if (Number.isFinite(p.bpm)) setBpm(p.bpm)
+    if (Number.isFinite(p.bars)) setBars(p.bars)
+    if (['low', 'medium', 'high'].includes(p.complexity)) setComplexity(p.complexity)
+    if (Number.isFinite(p.candidates)) setCandidates(p.candidates)
+    if (Number.isFinite(p.seed)) setSeed(p.seed)
+    if (typeof p.humanize === 'boolean') setHumanize(p.humanize)
+    if (typeof p.ai === 'boolean') setAi(p.ai)
+    if (typeof p.prompt === 'string') setPrompt(p.prompt)
+  }
+
+  function loadProjectFile(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(String(reader.result))
+        applyParams(data.params || data)
+      } catch {
+        /* ignore malformed files */
+      }
+    }
+    reader.readAsText(file)
+    e.target.value = ''
+  }
 
   const durationMin = useMemo(
     () => Math.max(2, Math.round(bars * 2.5 * (60 / bpm))),
@@ -283,12 +316,28 @@ export default function GeneratorView({ config, onGenerate, error, initial }) {
           </div>
         )}
 
-        <button
-          className="btn-primary w-full rounded-xl px-6 py-4 text-lg tracking-wide"
-          onClick={submit}
-        >
-          Generate composition
-        </button>
+        <div className="flex gap-3">
+          <button
+            className="btn-primary flex-1 rounded-xl px-6 py-4 text-lg tracking-wide"
+            onClick={submit}
+          >
+            Generate composition
+          </button>
+          <button
+            className="glass rounded-xl px-4 py-4 text-sm font-semibold text-slate-200 transition hover:border-[#ff7a1a]/60 hover:text-[#ffb25e]"
+            onClick={() => fileRef.current?.click()}
+            title="Load project JSON"
+          >
+            📂 Load project
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={loadProjectFile}
+          />
+        </div>
       </div>
 
       {/* ─── Summary ─── */}

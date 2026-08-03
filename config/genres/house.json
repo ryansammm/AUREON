@@ -1,0 +1,65 @@
+{
+  "genre": "house",
+  "default_bpm": 126,
+  "time_signature": [4, 4],
+  "default_key": "f",
+  "default_mode": "major",
+  "scale_pool": ["major", "dorian"],
+  "chord_pool": [
+    {"degree": "I", "weight": 1.0},
+    {"degree": "IV", "weight": 0.8},
+    {"degree": "V", "weight": 0.7},
+    {"degree": "vi", "weight": 0.6},
+    {"degree": "ii", "weight": 0.5},
+    {"degree": "iii", "weight": 0.3}
+  ],
+  "transition_matrix": {
+    "I": {"IV": 0.3, "V": 0.3, "vi": 0.25, "ii": 0.15},
+    "IV": {"V": 0.4, "I": 0.3, "ii": 0.3},
+    "V": {"I": 0.6, "vi": 0.25, "IV": 0.15},
+    "vi": {"IV": 0.4, "V": 0.3, "ii": 0.3},
+    "ii": {"V": 0.5, "IV": 0.3, "I": 0.2},
+    "iii": {"vi": 0.6, "IV": 0.4}
+  },
+  "role_ranges": {
+    "bass": {"min": 28, "max": 60, "preferred": 42},
+    "lead": {"min": 60, "max": 96, "preferred": 72},
+    "pad": {"min": 48, "max": 84, "preferred": 60},
+    "chord": {"min": 48, "max": 84, "preferred": 60}
+  },
+  "bass_patterns": {
+    "simple": [[16], [8, 8], [4, 4, 4, 4]],
+    "medium": [[4, 4, 4, 4], [2, 2, 2, 2, 2, 2, 2, 2], [2, 2, 4, 2, 2, 4]],
+    "complex": [[2, 2, 2, 2, 2, 2, 2, 2], [2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1], [4, 1, 1, 2, 1, 1, 2, 1, 1, 1, 1]]
+  },
+  "lead_patterns": {
+    "simple": [[8, 8], [4, 4, 4, 4], [16]],
+    "medium": [[2, 2, 4, 2, 2, 4], [4, 4, 2, 2, 2, 2], [2, 4, 4, 2, 4]],
+    "complex": [[1, 1, 2, 2, 2, 2, 2, 2, 2], [2, 2, 1, 1, 2, 1, 1, 2, 2, 2], [1, 1, 1, 1, 1, 1, 2, 2, 2, 4]]
+  },
+  "section_template": ["intro", "breakdown", "build", "drop", "outro"],
+  "section_bars": {"intro": 2, "breakdown": 4, "build": 4, "drop": 4, "outro": 2},
+  "section_density": {"intro": 0.3, "breakdown": 0.25, "build": 0.6, "drop": 0.85, "outro": 0.3},
+  "section_register": {"intro": 0, "breakdown": 1, "build": 0, "drop": 0, "outro": 0},
+  "section_velocity": {"intro": 72, "breakdown": 78, "build": 88, "drop": 100, "outro": 70},
+  "drum_patterns": {
+    "notes": {"kick": 36, "snare": 38, "hat": 42, "hat_open": 46, "crash": 49},
+    "patterns": {
+      "intro": {"hat": "...x...x...x...x"},
+      "breakdown": {"hat": "...x...x...x...x"},
+      "build": {"kick": "x...x...x...x...", "hat": "x.x.x.x.x.x.x.x.", "snare": "...............X"},
+      "drop": {"kick": "x...x...x...x...", "snare": "....x.......x...", "hat": "x.x.x.x.x.x.x.x.", "hat_open": "...............X", "crash": "X..............."},
+      "outro": {"kick": "x...x...x...x...", "hat": "x.x.x.x.x.x.x.x."}
+    }
+  },
+  "humanize": {"max_timing_ms": 25, "velocity_jitter": 4},
+  "swing": {"resolution": 8, "amount": 0.22},
+  "selector_weights": {"dissonance": 1.0, "repetition": 1.5, "voice_leading": 1.0},
+  "instrument_intent": {
+    "bass": {"label": "Bass - Deep House (House)", "preset": "deep_bass / analog_synth"},
+    "lead": {"label": "Lead - Stab (House)", "preset": "stab_pluck / chord_stab"},
+    "pad": {"label": "Pad - Warm (House)", "preset": "warm_pad / string_pad"},
+    "chord": {"label": "Chord - Warm Stabs (House)", "preset": "chord_stabs / rhodes"},
+    "drum": {"label": "Drums - 4 on Floor (House)", "preset": "house_kit / 909_kit"}
+  }
+}

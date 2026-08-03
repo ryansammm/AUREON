@@ -1,0 +1,72 @@
+{
+  "genre": "dubstep",
+  "default_bpm": 140,
+  "time_signature": [4, 4],
+  "default_key": "a",
+  "default_mode": "minor",
+  "scale_pool": ["natural_minor", "phrygian"],
+  "chord_pool": [
+    {"degree": "i", "weight": 1.0},
+    {"degree": "VI", "weight": 0.8},
+    {"degree": "III", "weight": 0.6},
+    {"degree": "VII", "weight": 0.6},
+    {"degree": "iv", "weight": 0.4}
+  ],
+  "transition_matrix": {
+    "i": {"VI": 0.4, "III": 0.3, "VII": 0.2, "iv": 0.1},
+    "VI": {"VII": 0.4, "III": 0.3, "i": 0.3},
+    "III": {"VII": 0.3, "VI": 0.4, "iv": 0.3},
+    "VII": {"i": 0.5, "III": 0.3, "VI": 0.2},
+    "iv": {"i": 0.5, "VII": 0.3, "III": 0.2}
+  },
+  "bass_patterns": {
+    "simple": [[16], [8, 8], [4, 4, 4, 4]],
+    "medium": [[2, 2, 4, 2, 2, 4], [4, 2, 2, 2, 2, 2, 2], [2, 4, 1, 1, 4, 2, 2]],
+    "complex": [[1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 2, 2], [2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1], [1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1]]
+  },
+  "lead_patterns": {
+    "simple": [[8, 8], [4, 4, 4, 4], [16]],
+    "medium": [[2, 2, 4, 2, 2, 4], [4, 4, 2, 2, 2, 2], [2, 4, 4, 2, 4]],
+    "complex": [[1, 1, 2, 2, 2, 2, 2, 2, 2], [2, 2, 1, 1, 2, 1, 1, 2, 2, 2], [1, 1, 1, 1, 1, 1, 2, 2, 2, 4]]
+  },
+  "role_ranges": {
+    "bass": {"min": 28, "max": 55, "preferred": 36},
+    "lead": {"min": 60, "max": 96, "preferred": 72},
+    "pad": {"min": 48, "max": 84, "preferred": 60},
+    "chord": {"min": 48, "max": 84, "preferred": 60}
+  },
+  "bass_patterns": {
+    "simple": [[16], [8, 8], [4, 4, 4, 4]],
+    "medium": [[2, 2, 4, 2, 2, 4], [4, 2, 2, 2, 2, 2, 2], [2, 4, 1, 1, 4, 2, 2]],
+    "complex": [[1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 2, 2], [2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1], [1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1]]
+  },
+  "section_template": ["intro", "buildup", "drop", "breakdown", "drop2", "outro"],
+  "section_bars": {"intro": 2, "buildup": 4, "drop": 4, "breakdown": 2, "drop2": 4, "outro": 2},
+  "section_density": {"intro": 0.3, "buildup": 0.6, "drop": 1.0, "breakdown": 0.2, "drop2": 1.0, "outro": 0.3},
+  "section_register": {"intro": 0, "buildup": 0, "drop": 0, "breakdown": 1, "drop2": 0, "outro": 0},
+  "section_velocity": {"intro": 70, "buildup": 85, "drop": 100, "breakdown": 78, "drop2": 100, "outro": 68},
+  "section_tempo": {"breakdown": 0.5},
+  "modulations": [{"section": "drop2", "semitones": 1}],
+  "automation": {"enabled": true, "cc74_range": [30, 125], "cc11": true},
+  "drum_patterns": {
+    "notes": {"kick": 36, "snare": 38, "hat": 42, "hat_open": 46, "crash": 49},
+    "patterns": {
+      "intro": {"kick": "x...............", "hat": "...x...x...x...x"},
+      "buildup": {"kick": "x...x...x...x...", "hat": "..x...x...x...x.", "snare": "...............x"},
+      "drop": {"kick": "x...........x...", "snare": "........x.......", "hat": "xxxxxxxxxxxxxxxx", "hat_open": "...........x....", "crash": "X..............."},
+      "breakdown": {"kick": "x...............", "hat": "....x....x......"},
+      "drop2": {"kick": "x...........x...", "snare": "........x.......", "hat": "xxxxxxxxxxxxxxxx", "hat_open": "...........x....", "crash": "X..............."},
+      "outro": {"kick": "x...........x...", "snare": "........x.......", "hat": "...x...x...x...x"}
+    }
+  },
+  "humanize": {"max_timing_ms": 25, "velocity_jitter": 4},
+  "swing": {"resolution": 16, "amount": 0.12},
+  "selector_weights": {"dissonance": 1.0, "repetition": 1.5, "voice_leading": 1.0},
+  "instrument_intent": {
+    "bass": {"label": "Bass - Wobble Style (Dubstep)", "preset": "sub_bass / wobble_synth"},
+    "lead": {"label": "Lead - Pluck (Dubstep)", "preset": "pluck_synth / saw_stack"},
+    "pad": {"label": "Pad - Dark Texture (Dubstep)", "preset": "dark_pad / detuned_pad"},
+    "chord": {"label": "Chord - Dark Stabs (Dubstep)", "preset": "chord_stabs / detuned_synth"},
+    "drum": {"label": "Drums - Half-Time (Dubstep)", "preset": "dubstep_kit / sidechain_kick"}
+  }
+}

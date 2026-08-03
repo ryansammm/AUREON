@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MIDI Composition Engine</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main>
+    <h1>MIDI Composition Engine</h1>
+    <p class="subtitle">Generate file <code>.mid</code> — pilih genre &amp; instrumen, sisanya diatur engine.</p>
+
+    <form method="post" action="/generate">
+      <div class="grid">
+        <label>Genre
+          <select name="genre">
+            {% for g in genres %}
+            <option value="{{ g }}">{{ g }}</option>
+            {% endfor %}
+          </select>
+        </label>
+
+        <label>Role instrumen (multi-track)
+          <div class="checkboxes">
+            {% for r in roles %}
+            <label class="check"><input type="checkbox" name="roles" value="{{ r }}" {% if r == 'bass' %}checked{% endif %}> {{ r }}</label>
+            {% endfor %}
+          </div>
+        </label>
+
+        <label>Mix level per role (render)
+          <div class="checkboxes">
+            {% for r in roles %}
+            <label class="check"><span>{{ r }}</span>
+              <input type="number" step="0.1" min="0" max="2" name="gain_{{ r }}"
+                     value="{{ {'bass': 0.6, 'lead': 0.5, 'pad': 0.42, 'chord': 0.42, 'drum': 0.78}[r] }}">
+            </label>
+            {% endfor %}
+          </div>
+        </label>
+
+        <label>Key
+          <input name="key" placeholder="a (default dari genre)" value="{{ defaults.get('key', '') }}">
+        </label>
+
+        <label>Mode
+          <select name="mode">
+            <option value="">default genre</option>
+            <option value="minor">minor</option>
+            <option value="major">major</option>
+          </select>
+        </label>
+
+        <label>BPM
+          <input type="number" name="bpm" placeholder="default genre" value="{{ defaults.get('bpm', '') }}">
+        </label>
+
+        <label>Jumlah bar
+          <input type="number" name="bars" min="1" placeholder="full template" value="{{ defaults.get('bars', '') }}">
+        </label>
+
+        <label>Kompleksitas
+          <select name="complexity">
+            <option value="simple">simple</option>
+            <option value="medium" selected>medium</option>
+            <option value="complex">complex</option>
+          </select>
+        </label>
+
+        <label>Kandidat (Layer 4)
+          <input type="number" name="candidates" min="1" max="20" value="3">
+        </label>
+
+        <label>Seed
+          <input type="number" name="seed" value="42">
+        </label>
+
+        <label class="check-line">
+          <input type="checkbox" name="humanize" checked> Humanize (micro-timing + velocity)
+        </label>
+      </div>
+
+      <button type="submit">Generate &amp; Download</button>
+    </form>
+  </main>
+</body>
+</html>

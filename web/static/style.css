@@ -1,0 +1,188 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: #12141a;
+  color: #e6e8ee;
+}
+
+main {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+h1 {
+  font-size: 1.6rem;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  color: #9aa0b0;
+  margin-top: 0;
+}
+
+code {
+  background: #1d2028;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 18px;
+  background: #1a1d26;
+  padding: 20px;
+  border-radius: 10px;
+  margin: 20px 0;
+}
+
+label {
+  font-size: 0.85rem;
+  color: #b8bdc9;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.checkboxes {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.check {
+  flex-direction: row;
+  align-items: center;
+  color: #e6e8ee;
+}
+
+.check-line {
+  flex-direction: row;
+  align-items: center;
+}
+
+input[type="text"],
+input[type="number"],
+select {
+  background: #0f1116;
+  border: 1px solid #2a2e3a;
+  color: #e6e8ee;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+button,
+.btn {
+  background: #3b82f6;
+  border: none;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 12px 22px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+button:hover,
+.btn:hover {
+  background: #2563eb;
+}
+
+.meta {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 8px 14px;
+  background: #1a1d26;
+  padding: 16px 20px;
+  border-radius: 10px;
+}
+
+.meta dt {
+  color: #9aa0b0;
+}
+
+.meta dd {
+  margin: 0;
+}
+
+.tracks {
+  list-style: none;
+  padding: 0;
+}
+
+.tracks li {
+  background: #1a1d26;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.preset {
+  color: #6fb7ff;
+  font-size: 0.85rem;
+}
+
+.count {
+  margin-left: auto;
+  color: #9aa0b0;
+  font-size: 0.85rem;
+}
+
+.ranking {
+  background: #1a1d26;
+  border-radius: 10px;
+  padding: 16px 16px 16px 40px;
+}
+
+.candidate {
+  margin-bottom: 14px;
+}
+
+.candidate audio {
+  width: 100%;
+  margin: 6px 0;
+}
+
+.cand-links {
+  font-size: 0.85rem;
+  color: #6fb7ff;
+}
+
+.cand-links a {
+  color: #6fb7ff;
+}
+
+audio {
+  width: 100%;
+}
+
+.error-box {
+  background: #2a1620;
+  border: 1px solid #b3405a;
+  border-radius: 10px;
+  padding: 16px 20px;
+}
+
+.error-box .hint {
+  color: #9aa0b0;
+}
+
+.btn.alt {
+  background: #334155;
+}
+
+.download {
+  margin-top: 28px;
+}

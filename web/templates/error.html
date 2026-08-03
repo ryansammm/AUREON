@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Error — MIDI Composition Engine</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main>
+    <h1>Gagal generate</h1>
+    <div class="error-box">
+      <p><strong>{{ error }}</strong></p>
+      <p class="hint">Periksa parameter: key harus huruf (a-g), bars > 0, candidates 1-20.</p>
+    </div>
+    <p><a href="/?genre={{ genre }}">Kembali &amp; coba lagi</a></p>
+  </main>
+</body>
+</html>

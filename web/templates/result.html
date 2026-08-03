@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hasil — MIDI Composition Engine</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main>
+    <h1>Composition Ready</h1>
+
+    <dl class="meta">
+      <dt>Genre / Key</dt><dd>{{ result.genre }} — {{ result.key }}</dd>
+      <dt>BPM</dt><dd>{{ result.bpm }}</dd>
+      <dt>Humanized</dt><dd>{{ 'ya' if result.humanized else 'tidak' }}</dd>
+      <dt>Arrangement</dt><dd>{{ result.arrangement }}</dd>
+      <dt>Chords</dt><dd>{{ result.chords }}</dd>
+    </dl>
+
+    <h2>Dengarkan</h2>
+    <audio controls preload="metadata" src="{{ url_for('play', filename=result.wav) }}"></audio>
+
+    <h2>Tracks</h2>
+    <ul class="tracks">
+      {% for t in result.tracks %}
+      <li>
+        <strong>{{ t.name }}</strong>
+        <span class="preset">{{ t.preset }}</span>
+        <span class="count">{{ t.notes }} notes</span>
+      </li>
+      {% endfor %}
+    </ul>
+
+    {% if result.candidates %}
+    <h2>Ranking kandidat — A/B compare</h2>
+    <ol class="ranking">
+      {% for c in result.candidates %}
+      <li class="candidate">
+        <div class="cand-head">
+          <span>#{{ c.rank }} seed={{ c.seed }} — score={{ c.score }}</span>
+        </div>
+        <audio controls preload="none" src="{{ url_for('play', filename=c.wav) }}"></audio>
+        <div class="cand-links">
+          <a href="{{ url_for('download', filename=c.mid) }}">.mid</a> ·
+          <a href="{{ url_for('download', filename=c.wav) }}">.wav</a>
+        </div>
+      </li>
+      {% endfor %}
+    </ol>
+    {% endif %}
+
+    <p class="download">
+      <a class="btn" href="{{ url_for('download', filename=result.mid) }}">Download {{ result.mid }}</a>
+      <a class="btn" href="{{ url_for('download', filename=result.wav) }}">Download {{ result.wav }}</a>
+    </p>
+    <p><a href="/">Generate lagi</a></p>
+  </main>
+</body>
+</html>

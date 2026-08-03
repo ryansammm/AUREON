@@ -1,0 +1,51 @@
+{
+  "genre": "generic",
+  "default_bpm": 120,
+  "time_signature": [4, 4],
+  "default_key": "c",
+  "default_mode": "major",
+  "scale_pool": ["major", "natural_minor"],
+  "chord_pool": [
+    {"degree": "I", "weight": 1.0},
+    {"degree": "IV", "weight": 0.8},
+    {"degree": "V", "weight": 0.8},
+    {"degree": "vi", "weight": 0.6},
+    {"degree": "ii", "weight": 0.5}
+  ],
+  "transition_matrix": {
+    "I": {"IV": 0.35, "V": 0.35, "vi": 0.3},
+    "IV": {"V": 0.5, "I": 0.3, "ii": 0.2},
+    "V": {"I": 0.6, "vi": 0.4},
+    "vi": {"IV": 0.4, "V": 0.3, "ii": 0.3},
+    "ii": {"V": 0.6, "IV": 0.4}
+  },
+  "role_ranges": {
+    "bass": {"min": 28, "max": 55, "preferred": 40},
+    "lead": {"min": 60, "max": 96, "preferred": 72},
+    "pad": {"min": 48, "max": 84, "preferred": 60},
+    "chord": {"min": 48, "max": 84, "preferred": 60}
+  },
+  "bass_patterns": {
+    "simple": [[16], [8, 8], [4, 4, 4, 4]],
+    "medium": [[4, 4, 4, 4], [2, 2, 4, 2, 2, 4], [2, 4, 2, 2, 4, 2]],
+    "complex": [[2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1], [1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 2, 2], [1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1]]
+  },
+  "lead_patterns": {
+    "simple": [[8, 8], [4, 4, 4, 4], [16]],
+    "medium": [[2, 2, 4, 2, 2, 4], [4, 4, 2, 2, 2, 2], [2, 4, 4, 2, 4]],
+    "complex": [[1, 1, 2, 2, 2, 2, 2, 2, 2], [2, 2, 1, 1, 2, 1, 1, 2, 2, 2], [1, 1, 1, 1, 1, 1, 2, 2, 2, 4]]
+  },
+  "drum_patterns": {
+    "notes": {"kick": 36, "snare": 38, "hat": 42, "hat_open": 46, "crash": 49},
+    "patterns": {
+      "drop": {"kick": "x...x...x...x...", "snare": "....x.......x...", "hat": "x.x.x.x.x.x.x.x."}
+    }
+  },
+  "instrument_intent": {
+    "bass": {"label": "Bass (Generic)", "preset": "generic_bass"},
+    "lead": {"label": "Lead (Generic)", "preset": "generic_lead"},
+    "pad": {"label": "Pad (Generic)", "preset": "generic_pad"},
+    "chord": {"label": "Chord (Generic)", "preset": "generic_chord"},
+    "drum": {"label": "Drums (Generic)", "preset": "generic_kit"}
+  }
+}

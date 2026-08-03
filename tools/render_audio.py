@@ -1,9 +1,9 @@
 """Quick WAV render of a generated .mid so you can listen to the composition.
 
-Synthesizes with numpy (no external binaries): melodic voices use
-sine/saw/square + ADSR-ish envelopes, percussion uses pitched/noisy drum
-voices, and the mix is stereo with per-role panning, a reverb bus and a
-soft limiter.
+Synthesizes with numpy (no external binaries): **all melodic layers preview as
+a piano voice** (drums keep their kit timbre), the mix is stereo with
+per-role panning, a reverb bus and a soft limiter. Instrument identity is
+kept in the MIDI (GM Program Change + track names), not in the preview audio.
 
 Usage:
     python tools\\render_audio.py output\\dubstep_full_top5.mid
@@ -116,11 +116,23 @@ def _pad(freq: float, t: np.ndarray) -> np.ndarray:
     return (np.sin(2 * np.pi * t * freq) + det * 0.6) / 1.6
 
 
+def _piano(freq: float, t: np.ndarray) -> np.ndarray:
+    """Simple acoustic-piano-ish voice: harmonic partials + per-pitch decay."""
+    partials = [1.0, 0.5, 0.33, 0.25, 0.18]
+    sig = np.zeros_like(t)
+    for i, amp in enumerate(partials, start=1):
+        sig += amp * np.sin(2 * np.pi * t * freq * i)
+    decay = np.exp(-t * (4.0 + freq * 0.004))
+    return sig * decay / sum(partials)
+
+
 def melodic_waveform(kind: str, freq: float, t: np.ndarray) -> np.ndarray:
     if kind == "saw":
         return _saw(freq, t)
     if kind == "square":
         return _square(freq, t)
+    if kind == "piano":
+        return _piano(freq, t)
     return _pad(freq, t)
 
 
@@ -254,13 +266,13 @@ def render_to_wav(
             amp = (vel / 127) ** 0.7 * gains.get(role, 0.78) * gain
             env = np.ones(n)
         else:
-            kind = {"bass": "saw", "sub_bass": "saw", "lead": "square",
-                    "counter_lead": "square", "pad": "pad", "chord": "pad",
-                    "arp": "square", "stab": "square"}.get(role, "square")
-            sig = melodic_waveform(kind, freq, t)
+            # Preview voice: all melodic layers render as piano so the mix
+            # stays readable; drum voices keep their kit timbre. Instrument
+            # identity lives in the MIDI export (GM Program Change + name).
+            sig = melodic_waveform("piano", freq, t)
             pan = ROLE_PAN.get(role, 0.0)
             amp = (vel / 127) ** 0.7 * gains.get(role, 0.5) * gain
-            env = envelope(t, dur, role in ("pad", "chord"))
+            env = envelope(t, dur, False)
         gl, gr = pan_gains(pan)
         seg = sig * env * amp
         buf_l[t0:t0 + n] += seg * gl

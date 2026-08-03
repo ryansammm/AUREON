@@ -1,8 +1,10 @@
 """Layer 6 — MIDI Export.
 
 Writes standard Type-1 multi-track MIDI files readable by all major DAWs
-(Ableton, FL Studio, Logic, Cubase). Track names carry instrument-intent
-labels (FR-8); tempo and time signature live in track 0.
+(Ableton, FL Studio, Logic, Cubase). Each role track carries a General MIDI
+**Program Change** (drums on channel 10) plus an instrument-intent label in
+the track name, so a DAW import auto-assigns the right instrument from the
+GM patch map. Tempo and time signature live in track 0.
 
 Musical assumption: note ``start_beat``/``duration_beat`` are quarter-note
 beats, so tick = beat * ``ticks_per_beat``.
@@ -12,6 +14,21 @@ import mido
 from mido import Message, MetaMessage, MidiFile, MidiTrack, bpm2tempo
 
 DEFAULT_TICKS_PER_BEAT = 480
+
+# Internal role -> General MIDI program (0-127). Drums use the standard GM
+# kit (program 0) on channel 10 (index 9). Unknown roles fall back to 0.
+ROLE_GM_PROGRAM = {
+    "sub_bass": 38,      # Synth Bass 1
+    "bass": 33,          # Electric Bass (finger)
+    "lead": 81,          # Lead 2 (sawtooth)
+    "counter_lead": 80,  # Lead 1 (square)
+    "arp": 83,           # Lead 4 (chiff) — pluck-like
+    "stab": 62,          # Synth Brass 1
+    "chord": 5,          # Electric Piano 2 (rhodes)
+    "pad": 89,           # Pad 2 (warm)
+    "drum": 0,           # Standard GM drum kit (channel 10)
+    "drum_layers": 0,    # Standard GM drum kit (channel 10)
+}
 
 
 def export_midi(
@@ -72,6 +89,10 @@ def _build_role_track(track, ticks_per_beat: int) -> MidiTrack:
     mt.append(MetaMessage("track_name", name=track.track_name))
 
     channel = getattr(track, "channel", 0) or 0
+
+    # GM Program Change so DAWs auto-load the right instrument on import.
+    program = ROLE_GM_PROGRAM.get(track.role, 0)
+    mt.append(Message("program_change", program=program, time=0, channel=channel))
 
     events = []
     for note in track.notes:

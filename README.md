@@ -53,7 +53,10 @@ a synth or soundfont.
   the **General MIDI patch & drum maps**, with manual per-track override and
   non-GM-compliance warnings.
 - **WAV render** — stereo synthesis with per-role panning, drum voices and
-  reverb; plus a metrics report per track/section.
+  reverb; **all melodic layers preview as a piano voice** (drums keep their
+  kit timbre) for a readable mix, while the MIDI export embeds **GM Program
+  Changes** (drums on channel 10) so a DAW import auto-loads the right
+  instruments; plus a metrics report per track/section.
 
 ## Install
 

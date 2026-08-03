@@ -50,6 +50,36 @@ function Slider({ value, onChange, min, max, step = 1 }) {
   )
 }
 
+function NumberSlider({ value, onChange, min, max, step = 1 }) {
+  const commit = (raw) => {
+    const v = Number(raw)
+    if (!Number.isFinite(v)) return
+    onChange(Math.min(max, Math.max(min, v)))
+  }
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="range"
+        className="accent flex-1"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+      />
+      <input
+        type="number"
+        className="glass w-16 shrink-0 rounded-lg border border-white/10 px-2 py-1.5 text-center text-sm outline-none focus:border-[#ff7a1a]"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => commit(e.target.value)}
+      />
+    </div>
+  )
+}
+
 export default function GeneratorView({ config, onGenerate, error, initial }) {
   const [genre, setGenre] = useState(initial?.genre || config.genres[0])
   const def = config.genre_defaults[genre] || { bpm: 140, key: 'a', mode: 'minor' }
@@ -208,10 +238,10 @@ export default function GeneratorView({ config, onGenerate, error, initial }) {
             </div>
           </Field>
           <Field label="BPM" hint={bpm}>
-            <Slider value={bpm} onChange={setBpm} min={60} max={200} />
+            <NumberSlider value={bpm} onChange={setBpm} min={60} max={200} />
           </Field>
           <Field label="Bars" hint={bars}>
-            <Slider value={bars} onChange={setBars} min={4} max={280} />
+            <NumberSlider value={bars} onChange={setBars} min={4} max={280} />
           </Field>
         </section>
 

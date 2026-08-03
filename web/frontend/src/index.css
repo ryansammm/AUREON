@@ -65,6 +65,18 @@ input[type="range"].accent {
   accent-color: var(--accent);
 }
 
+/* Native dropdowns: always render readable options on the dark theme */
+select option {
+  background-color: #17130e;
+  color: #e2e8f0;
+}
+select {
+  color: #e8eaf0;
+}
+select:disabled option {
+  color: #64748b;
+}
+
 /* Custom scrollbars */
 *::-webkit-scrollbar {
   width: 10px;

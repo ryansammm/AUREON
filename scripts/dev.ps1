@@ -18,7 +18,7 @@ $port = 8000
 
 function Get-ServerPids {
     Get-CimInstance Win32_Process -Filter "Name='python.exe'" -ErrorAction SilentlyContinue |
-        Where-Object { $_.CommandLine -match [regex]::Escape((Join-Path $root "web\app.py")) }
+        Where-Object { $_.CommandLine -match 'web[\\/]app\.py' }
 }
 function Get-FluidsynthPids {
     Get-Process -Name "fluidsynth*" -ErrorAction SilentlyContinue
@@ -30,6 +30,10 @@ function Test-PortFree {
 function Stop-All {
     foreach ($p in Get-ServerPids) { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }
     foreach ($p in Get-FluidsynthPids) { Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }
+    # Safety net: whatever actually owns the port dies too (catches any
+    # server started with a relative vs absolute path mismatch).
+    $conn = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
+    foreach ($c in $conn) { Stop-Process -Id $c.OwningProcess -Force -ErrorAction SilentlyContinue }
     Start-Sleep -Milliseconds 800
 }
 

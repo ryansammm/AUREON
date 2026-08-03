@@ -11,7 +11,7 @@ function fmtTime(ts) {
   })
 }
 
-export default function HistoryView({ history, onOpen, onRemove, onCompare }) {
+export default function HistoryView({ history, onOpen, onRemove, onCompare, onBack }) {
   const [playingId, setPlayingId] = useState(null)
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState([])
@@ -30,6 +30,14 @@ export default function HistoryView({ history, onOpen, onRemove, onCompare }) {
         <p className="mt-1 text-sm text-slate-500">
           Generate a composition and it will be saved here automatically.
         </p>
+        {onBack && (
+          <button
+            className="btn-primary mt-6 rounded-lg px-5 py-2 text-sm font-semibold"
+            onClick={onBack}
+          >
+            ← Compose
+          </button>
+        )}
       </div>
     )
   }
@@ -37,7 +45,17 @@ export default function HistoryView({ history, onOpen, onRemove, onCompare }) {
   return (
     <div className="fade-up space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-bold">Composition history</h2>
+        <div className="flex items-center gap-3">
+          {onBack && (
+            <button
+              className="glass rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-200 transition hover:border-[#ff7a1a]/60 hover:text-[#ffb25e]"
+              onClick={onBack}
+            >
+              ← Compose
+            </button>
+          )}
+          <h2 className="text-lg font-bold">Composition history</h2>
+        </div>
         <div className="flex items-center gap-2">
           {selectMode && (
             <button

@@ -78,48 +78,51 @@ export default function App() {
     setView('result')
   }
 
+  const isNavActive = (key) => {
+    if (key === 'form') return view === 'form' || view === 'loading' || view === 'result'
+    if (key === 'history') return view === 'history' || view === 'compare'
+    return view === key
+  }
+
   return (
     <div className="bg-aurora min-h-full">
       <header className="sticky top-0 z-20 glass border-b">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-3">
+          <button className="flex items-center gap-3" onClick={() => setView('form')} title="Back to compose">
             <span className="text-2xl text-accent">♫</span>
             <h1 className="text-xl font-extrabold tracking-wide text-glow">AUREON</h1>
             <span className="rounded-full border border-[#ff7a1a]/40 bg-[#ff7a1a]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-[#ffb25e]">
               Phase 5 · AI
             </span>
-          </div>
+          </button>
           {view !== 'loading' && (
-            <div className="flex items-center gap-2">
+            <nav className="flex flex-wrap items-center gap-2">
               {view === 'result' && (
                 <button
-                  className="glass rounded-lg px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-[#ff7a1a]/60 hover:text-[#ffb25e]"
+                  className="btn-primary rounded-lg px-4 py-2 text-sm font-semibold"
                   onClick={() => setView('form')}
                 >
-                  ← New composition
+                  + New composition
                 </button>
               )}
-              <button
-                className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
-                  view === 'import'
-                    ? 'border-[#ff7a1a] bg-[#ff7a1a]/15 text-[#ffb25e]'
-                    : 'glass text-slate-200 hover:border-white/30'
-                }`}
-                onClick={() => setView(view === 'import' ? 'form' : 'import')}
-              >
-                Import MIDI
-              </button>
-              <button
-                className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
-                  view === 'history'
-                    ? 'border-[#ff7a1a] bg-[#ff7a1a]/15 text-[#ffb25e]'
-                    : 'glass text-slate-200 hover:border-white/30'
-                }`}
-                onClick={() => setView(view === 'history' ? 'form' : 'history')}
-              >
-                History {history.length > 0 ? `(${history.length})` : ''}
-              </button>
-            </div>
+              {[
+                { key: 'form', label: 'Compose' },
+                { key: 'history', label: `History${history.length ? ` (${history.length})` : ''}` },
+                { key: 'import', label: 'Import MIDI' },
+              ].map(({ key, label }) => (
+                <button
+                  key={key}
+                  className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
+                    isNavActive(key)
+                      ? 'border-[#ff7a1a] bg-[#ff7a1a]/15 text-[#ffb25e]'
+                      : 'glass text-slate-200 hover:border-white/30'
+                  }`}
+                  onClick={() => setView(key)}
+                >
+                  {label}
+                </button>
+              ))}
+            </nav>
           )}
         </div>
       </header>
@@ -155,6 +158,7 @@ export default function App() {
             history={history}
             onOpen={openHistoryEntry}
             onRemove={(id) => setHistory(removeHistoryEntry(id))}
+            onBack={() => setView('form')}
             onCompare={(a, b) => {
               setComparePair({ a, b })
               setView('compare')
@@ -176,6 +180,7 @@ export default function App() {
               setPendingProject({ roles: roles.filter((r) => r) })
               setView('form')
             }}
+            onBack={() => setView('form')}
           />
         )}
       </main>

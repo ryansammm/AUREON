@@ -7,7 +7,7 @@ const ROLE_OPTIONS = [
   'counter_lead', 'drum', 'drum_layers',
 ]
 
-export default function ImportView({ onUseRoles }) {
+export default function ImportView({ onUseRoles, onBack }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [report, setReport] = useState(null)
@@ -61,7 +61,17 @@ export default function ImportView({ onUseRoles }) {
   return (
     <div className="fade-up space-y-4">
       <div className="glass rounded-2xl p-6">
-        <h2 className="text-lg font-bold">Import MIDI → GM instrument map</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-bold">Import MIDI → GM instrument map</h2>
+          {onBack && (
+            <button
+              className="glass rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-200 transition hover:border-[#ff7a1a]/60 hover:text-[#ffb25e]"
+              onClick={onBack}
+            >
+              ← Compose
+            </button>
+          )}
+        </div>
         <p className="mt-1 text-sm text-slate-500">
           Upload a .mid file. Program Changes and channel numbers are read per
           track and mapped to internal plugins via the General MIDI patch &

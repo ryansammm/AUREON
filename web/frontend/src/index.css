@@ -63,6 +63,8 @@ body {
 
 input[type="range"].accent {
   accent-color: var(--accent);
+  min-width: 0;
+  width: 100%;
 }
 
 /* Native dropdowns: always render readable options on the dark theme */

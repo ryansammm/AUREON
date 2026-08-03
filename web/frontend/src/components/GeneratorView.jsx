@@ -40,7 +40,7 @@ function Slider({ value, onChange, min, max, step = 1 }) {
   return (
     <input
       type="range"
-      className="accent w-full"
+      className="accent w-full min-w-0"
       min={min}
       max={max}
       step={step}
@@ -60,7 +60,7 @@ function NumberSlider({ value, onChange, min, max, step = 1 }) {
     <div className="flex items-center gap-2">
       <input
         type="range"
-        className="accent flex-1"
+        className="accent min-w-0 flex-1"
         min={min}
         max={max}
         step={step}

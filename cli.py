@@ -27,9 +27,12 @@ def build_parser() -> argparse.ArgumentParser:
         description="Advanced MIDI Composition Engine (Phase 3).",
     )
     parser.add_argument("--genre", default="dubstep", help="genre config name")
-    parser.add_argument("--role", default="bass", help="instrument role (bass/lead/pad/chord)")
+    parser.add_argument("--role", default="bass",
+                        help="instrument role (bass/lead/pad/chord/arp/stab/"
+                             "sub_bass/counter_lead/drum/drum_layers)")
     parser.add_argument("--roles", default=None,
-                        help="comma-separated roles for multi-track, e.g. 'bass,lead,chord'")
+                        help="comma-separated roles for multi-track, e.g. "
+                             "'bass,lead,chord,arp,sub_bass,drum,drum_layers'")
     parser.add_argument("--key", default=None, help="key root, e.g. 'a' (default from config)")
     parser.add_argument("--mode", default=None, choices=["minor", "major"],
                         help="key mode (default from config)")

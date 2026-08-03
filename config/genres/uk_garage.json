@@ -1,19 +1,19 @@
 {
-  "genre": "house",
-  "default_bpm": 126,
+  "genre": "uk_garage",
+  "default_bpm": 134,
   "time_signature": [
     4,
     4
   ],
-  "default_key": "f",
-  "default_mode": "major",
+  "default_key": "g",
+  "default_mode": "minor",
   "scale_pool": [
-    "major",
-    "dorian"
+    "dorian",
+    "natural_minor"
   ],
   "chord_pool": [
     {
-      "degree": "I",
+      "degree": "i",
       "weight": 1.0
     },
     {
@@ -21,52 +21,32 @@
       "weight": 0.8
     },
     {
-      "degree": "V",
-      "weight": 0.7
-    },
-    {
-      "degree": "vi",
+      "degree": "VII",
       "weight": 0.6
     },
     {
-      "degree": "ii",
-      "weight": 0.5
-    },
-    {
-      "degree": "iii",
-      "weight": 0.3
+      "degree": "III",
+      "weight": 0.4
     }
   ],
   "transition_matrix": {
-    "I": {
-      "IV": 0.3,
-      "V": 0.3,
-      "vi": 0.25,
-      "ii": 0.15
+    "i": {
+      "IV": 0.45,
+      "VII": 0.35,
+      "III": 0.2
     },
     "IV": {
-      "V": 0.4,
-      "I": 0.3,
-      "ii": 0.3
+      "VII": 0.5,
+      "i": 0.3,
+      "III": 0.2
     },
-    "V": {
-      "I": 0.6,
-      "vi": 0.25,
-      "IV": 0.15
+    "VII": {
+      "i": 0.5,
+      "IV": 0.5
     },
-    "vi": {
-      "IV": 0.4,
-      "V": 0.3,
-      "ii": 0.3
-    },
-    "ii": {
-      "V": 0.5,
-      "IV": 0.3,
-      "I": 0.2
-    },
-    "iii": {
-      "vi": 0.6,
-      "IV": 0.4
+    "III": {
+      "VII": 0.5,
+      "i": 0.5
     }
   },
   "role_ranges": {
@@ -96,7 +76,7 @@
       "preferred": 72
     },
     "stab": {
-      "min": 52,
+      "min": 55,
       "max": 84,
       "preferred": 67
     },
@@ -113,12 +93,12 @@
   },
   "role_params": {
     "arp": {
-      "order": "up",
-      "note_length": 0.22,
+      "order": "down",
+      "note_length": 0.18,
       "octave_span": 2
     },
     "stab": {
-      "duration_beat": 0.35,
+      "duration_beat": 0.4,
       "velocity_boost": 8
     },
     "counter_lead": {
@@ -148,26 +128,24 @@
     ],
     "medium": [
       [
+        2,
+        2,
         4,
-        4,
-        4,
+        2,
+        2,
         4
       ],
       [
-        2,
-        2,
-        2,
-        2,
+        8,
         2,
         2,
         2,
         2
       ],
       [
-        2,
-        2,
         4,
         2,
+        4,
         2,
         4
       ]
@@ -185,44 +163,38 @@
       ],
       [
         2,
-        1,
-        1,
-        2,
-        1,
-        1,
-        2,
-        1,
-        1,
-        2,
-        1,
-        1
-      ],
-      [
         4,
         1,
         1,
+        4,
+        2,
+        2
+      ],
+      [
         2,
         1,
         1,
         2,
+        2,
+        2,
         1,
         1,
-        1,
-        1
+        2,
+        2
       ]
     ]
   },
   "lead_patterns": {
     "simple": [
       [
+        8,
+        8
+      ],
+      [
         4,
         4,
         4,
         4
-      ],
-      [
-        8,
-        8
       ],
       [
         16
@@ -230,6 +202,13 @@
     ],
     "medium": [
       [
+        4,
+        2,
+        4,
+        2,
+        4
+      ],
+      [
         2,
         2,
         4,
@@ -238,130 +217,91 @@
         4
       ],
       [
-        4,
-        4,
         2,
+        6,
         2,
-        2,
-        2
-      ],
-      [
-        2,
-        4,
-        4,
-        2,
-        4
+        6
       ]
     ],
     "complex": [
       [
+        2,
+        4,
         1,
         1,
-        2,
-        2,
-        2,
-        2,
-        2,
-        2,
-        2
-      ],
-      [
-        2,
-        2,
-        1,
-        1,
-        2,
-        1,
-        1,
-        2,
+        4,
         2,
         2
       ],
       [
         1,
+        3,
         1,
         1,
+        3,
         1,
         1,
+        3,
         1,
+        1
+      ],
+      [
+        2,
+        2,
+        4,
         2,
         2,
         2,
-        4
+        2
       ]
     ]
   },
   "arp_patterns": {
     "simple": [
       [
+        2,
+        6,
+        2,
+        6
+      ],
+      [
         4,
+        2,
         4,
-        4,
+        2,
         4
-      ],
-      [
-        2,
-        2,
-        2,
-        2,
-        2,
-        2,
-        2,
-        2
-      ],
-      [
-        8,
-        8
       ]
     ],
     "medium": [
       [
+        4,
         2,
+        4,
         2,
+        4
+      ],
+      [
         2,
+        6,
         2,
+        6
+      ]
+    ],
+    "complex": [
+      [
         2,
-        2,
+        4,
+        1,
+        1,
+        4,
         2,
         2
       ],
       [
         2,
         2,
-        4,
         2,
         2,
-        4
-      ]
-    ],
-    "complex": [
-      [
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1
-      ],
-      [
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
         2,
         2,
         2,
@@ -372,25 +312,25 @@
   "stab_patterns": {
     "simple": [
       [
+        2,
+        6,
+        2,
+        6
+      ],
+      [
         4,
+        2,
         4,
-        4,
+        2,
         4
-      ],
-      [
-        8,
-        8
-      ],
-      [
-        16
       ]
     ],
     "medium": [
       [
-        4,
-        4,
-        4,
-        4
+        2,
+        6,
+        2,
+        6
       ],
       [
         2,
@@ -403,20 +343,23 @@
     ],
     "complex": [
       [
-        4,
-        4,
         2,
-        2,
+        4,
+        1,
+        1,
+        4,
         2,
         2
       ],
       [
         2,
         2,
-        4,
         2,
         2,
-        4
+        2,
+        2,
+        2,
+        2
       ]
     ]
   },
@@ -439,31 +382,20 @@
     "medium": [
       [
         4,
+        2,
         4,
-        4,
+        2,
         4
       ],
       [
-        8,
-        8
-      ],
-      [
         2,
+        6,
         2,
-        4,
-        2,
-        2,
-        4
+        6
       ]
     ],
     "complex": [
       [
-        4,
-        4,
-        4,
-        4
-      ],
-      [
         2,
         2,
         4,
@@ -473,11 +405,10 @@
       ],
       [
         2,
-        2,
-        2,
-        2,
-        2,
-        2,
+        4,
+        1,
+        1,
+        4,
         2,
         2
       ]
@@ -488,37 +419,26 @@
       [
         8,
         8
-      ],
-      [
-        16
       ]
     ],
     "medium": [
       [
-        8,
-        8
-      ],
-      [
         4,
+        2,
         4,
-        4,
+        2,
         4
       ]
     ],
     "complex": [
       [
-        4,
-        4,
-        4,
-        4
-      ],
-      [
-        2,
         2,
         4,
+        1,
+        1,
+        4,
         2,
-        2,
-        4
+        2
       ]
     ]
   },
@@ -527,20 +447,23 @@
     "breakdown",
     "build",
     "drop",
+    "drop2",
     "outro"
   ],
   "section_bars": {
     "intro": 2,
-    "breakdown": 4,
+    "breakdown": 2,
     "build": 4,
     "drop": 4,
+    "drop2": 4,
     "outro": 2
   },
   "section_density": {
     "intro": 0.3,
     "breakdown": 0.25,
     "build": 0.6,
-    "drop": 0.85,
+    "drop": 0.9,
+    "drop2": 0.9,
     "outro": 0.3
   },
   "section_register": {
@@ -548,19 +471,21 @@
     "breakdown": 1,
     "build": 0,
     "drop": 0,
+    "drop2": 0,
     "outro": 0
   },
   "section_velocity": {
     "intro": 72,
-    "breakdown": 78,
-    "build": 88,
+    "breakdown": 76,
+    "build": 86,
     "drop": 100,
+    "drop2": 100,
     "outro": 70
   },
   "automation": {
     "enabled": true,
     "cc74_range": [
-      25,
+      28,
       118
     ],
     "cc11": true
@@ -570,8 +495,8 @@
     "velocity_jitter": 4
   },
   "swing": {
-    "resolution": 8,
-    "amount": 0.22
+    "resolution": 16,
+    "amount": 0.18
   },
   "selector_weights": {
     "dissonance": 1.0,
@@ -589,32 +514,34 @@
     },
     "patterns": {
       "intro": {
-        "hat": "...x...x...x...x"
+        "kick": "x...............",
+        "hat": "x.x.x.x.x.x.x.x."
       },
       "breakdown": {
-        "hat": "...x...x...x...x"
+        "kick": "x...............",
+        "hat": "x.x.x.x.x.x.x.x."
       },
       "build": {
-        "kick": "x...x...x...x...",
-        "hat": "x.x.x.x.x.x.x.x.",
-        "snare": "...............X"
+        "kick": "x...x........x..",
+        "clap": "....x.......x...",
+        "hat": "x.x.x.x.x.x.x.x."
       },
       "drop": {
-        "kick": "x...x...x...x...",
-        "snare": "....x.......x...",
+        "kick": "x...x........x..",
+        "clap": "....x.......x...",
         "hat": "x.x.x.x.x.x.x.x.",
-        "hat_open": "...............X",
+        "hat_open": ".......x.......x",
         "crash": "X..............."
       },
       "drop2": {
-        "kick": "x...x...x...x...",
-        "snare": "....x.......x...",
+        "kick": "x...x........x..",
+        "clap": "....x.......x...",
         "hat": "x.x.x.x.x.x.x.x.",
-        "hat_open": "...............X",
+        "hat_open": ".......x.......x",
         "crash": "X..............."
       },
       "outro": {
-        "kick": "x...x...x...x...",
+        "kick": "x...x........x..",
         "hat": "x.x.x.x.x.x.x.x."
       }
     },
@@ -626,67 +553,66 @@
     },
     "layers": {
       "build": {
-        "shaker": "x.x.x.x.x.x.x.x.",
-        "tom": "..............x."
+        "shaker": "x.x.x.x.x.x.x.x."
       },
       "drop": {
         "shaker": "x.x.x.x.x.x.x.x.",
-        "perc": "....x...x...x...",
+        "perc": "x.x...x.x...x.x.",
         "cymbal": "...............x"
       },
       "drop2": {
         "shaker": "x.x.x.x.x.x.x.x.",
-        "perc": "....x...x...x..."
+        "perc": "x.x...x.x...x.x."
       }
     },
     "fills": {
       "enabled": true,
       "voices": [
-        "perc",
-        "tom"
+        "shaker",
+        "perc"
       ],
       "beats": 1
     }
   },
   "instrument_intent": {
     "bass": {
-      "label": "Bass - Deep House",
-      "preset": "deep_bass / analog_synth"
+      "label": "Bass - 2-Step (UK Garage)",
+      "preset": "garage_bass"
     },
     "sub_bass": {
-      "label": "Sub Bass (house)",
+      "label": "Sub Bass (uk_garage)",
       "preset": "sub_bass_low / sine"
     },
     "lead": {
-      "label": "Lead - Stab (House)",
-      "preset": "stab_pluck / chord_stab"
+      "label": "Lead - Shuffled (UK Garage)",
+      "preset": "vocal_pluck"
     },
     "arp": {
-      "label": "Arp (house)",
+      "label": "Arp (uk_garage)",
       "preset": "pluck_synth / arp_synth"
     },
     "stab": {
-      "label": "Stab (house)",
+      "label": "Stab (uk_garage)",
       "preset": "chord_stab / detuned_synth"
     },
     "counter_lead": {
-      "label": "Counter Lead (house)",
+      "label": "Counter Lead (uk_garage)",
       "preset": "lead_synth_2 / square"
     },
     "pad": {
-      "label": "Pad - Warm (House)",
-      "preset": "warm_pad / string_pad"
+      "label": "Pad (uk_garage)",
+      "preset": "pad_synth / dark_pad"
     },
     "chord": {
-      "label": "Chord - Warm Stabs (House)",
-      "preset": "chord_stabs / rhodes"
+      "label": "Chord (uk_garage)",
+      "preset": "chord_synth / rhodes"
     },
     "drum": {
-      "label": "Drums - 4 on Floor (House)",
-      "preset": "house_kit / 909_kit"
+      "label": "Drums - 2-Step (UK Garage)",
+      "preset": "garage_kit"
     },
     "drum_layers": {
-      "label": "Drum Layers - Percussion (house)",
+      "label": "Drum Layers - Percussion (uk_garage)",
       "preset": "electronic_percussion"
     }
   }

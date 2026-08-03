@@ -36,13 +36,13 @@ class Humanizer:
 
         A note is an off-beat when it sits on an odd step index of the
         swing resolution (e.g. resolution 8 = every other eighth-note,
-        resolution 16 = every other 16th). Sustained chord/pad roles are
-        left on the grid.
+        resolution 16 = every other 16th). Sustained chord/pad roles and
+        sub-bass (kick-locked by design) are left on the grid.
         """
         amount = self.swing.get("amount", 0.0)
         if not amount:
             return
-        if note.role in ("pad", "chord"):
+        if note.role in ("pad", "chord", "sub_bass"):
             return
         resolution = int(self.swing.get("resolution", 8) or 8)
         step = BEATS_PER_BAR / resolution

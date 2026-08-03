@@ -54,24 +54,48 @@ def _validate_drum_patterns(config: dict) -> None:
         return
     if "notes" in drum_cfg and not isinstance(drum_cfg["notes"], dict):
         raise ValueError("drum_patterns.notes must be an object")
-    patterns = drum_cfg.get("patterns") or {}
-    if not isinstance(patterns, dict):
-        raise ValueError("drum_patterns.patterns must be an object")
-    for section, voices in patterns.items():
-        if not isinstance(voices, dict):
-            raise ValueError(f"drum_patterns.patterns['{section}'] must be an object")
-        for voice, steps in voices.items():
-            if not isinstance(steps, str) or len(steps) != 16:
+    if "layer_notes" in drum_cfg and not isinstance(drum_cfg["layer_notes"], dict):
+        raise ValueError("drum_patterns.layer_notes must be an object")
+
+    def _check_section_voices(block: dict, label: str) -> None:
+        if not isinstance(block, dict):
+            raise ValueError(f"drum_patterns.{label} must be an object")
+        for section, voices in block.items():
+            if not isinstance(voices, dict):
                 raise ValueError(
-                    f"drum step string for '{section}'/'{voice}' must be 16 "
-                    f"characters, got {len(steps) if isinstance(steps, str) else steps}"
+                    f"drum_patterns.{label}['{section}'] must be an object"
                 )
-            invalid = set(steps) - {".", "x", "X"}
-            if invalid:
-                raise ValueError(
-                    f"drum step string for '{section}'/'{voice}' has invalid "
-                    f"characters {sorted(invalid)} (allowed: '.', 'x', 'X')"
-                )
+            for voice, steps in voices.items():
+                if not isinstance(steps, str) or len(steps) != 16:
+                    raise ValueError(
+                        f"drum step string for '{label}'/'{section}'/'{voice}' "
+                        f"must be 16 characters, got "
+                        f"{len(steps) if isinstance(steps, str) else steps}"
+                    )
+                invalid = set(steps) - {".", "x", "X"}
+                if invalid:
+                    raise ValueError(
+                        f"drum step string for '{label}'/'{section}'/'{voice}' "
+                        f"has invalid characters {sorted(invalid)} "
+                        f"(allowed: '.', 'x', 'X')"
+                    )
+
+    _check_section_voices(drum_cfg.get("patterns"), "patterns")
+    _check_section_voices(drum_cfg.get("layers"), "layers")
+
+
+def _validate_role_params(config: dict) -> None:
+    """Validate the optional per-role parameter block."""
+    params = config.get("role_params") or {}
+    if not isinstance(params, dict):
+        raise ValueError("role_params must be an object")
+    for role, block in params.items():
+        if not isinstance(block, dict):
+            raise ValueError(f"role_params['{role}'] must be an object")
+        if "counter_lead" in block:
+            for key, value in block["counter_lead"].items():
+                if key == "delay_beats" and value < 0:
+                    raise ValueError("role_params.counter_lead.delay_beats >= 0")
 
 
 def _validate_sections(config: dict) -> None:
@@ -127,6 +151,7 @@ def validate_genre_config(config) -> bool:
             raise ValueError(f"role '{role}' range invalid: {rng}")
     _validate_patterns(config)
     _validate_drum_patterns(config)
+    _validate_role_params(config)
     _validate_sections(config)
     return True
 

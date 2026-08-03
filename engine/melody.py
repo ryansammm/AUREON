@@ -112,6 +112,207 @@ class MelodicEngine:
         return notes
 
     # ------------------------------------------------------------------ #
+    # Arp / pluck — rhythmic arpeggios cycling through chord tones
+    # ------------------------------------------------------------------ #
+    def generate_arp(
+        self,
+        progression,
+        scale_pcs: Set[int],
+        role: str = "arp",
+        plan=None,
+        complexity: str = "medium",
+        base_velocity: int = 92,
+    ) -> list:
+        """Return a note-per-onset arpeggio line (Layer 2 extension).
+
+        Chord tones are cycled through the role register in an order
+        chosen by ``role_params["arp"]["order"]`` (up/down/updown/random).
+        Note length is fixed (``note_length``) so the arp reads as a
+        pulsing pluck rather than a sustained line.
+        """
+        role_range = self.config["role_ranges"][role]
+        default_section = self.config.get("section_template", ["drop"])[0]
+        params = self.config.get("role_params", {}).get("arp", {})
+        order = params.get("order", "up")
+        note_length = float(params.get("note_length", 0.22))
+        octaves = int(params.get("octave_span", 2))
+
+        notes = []
+        for bar, chord in enumerate(progression):
+            profile = plan[bar] if plan else None
+            density = profile.density if profile else 1.0
+            register_shift = profile.register_shift if profile else 0
+            velocity_base = profile.base_velocity if profile else base_velocity
+            section = profile.name if profile else default_section
+
+            patterns = self._patterns_for(role, complexity, density)
+            rhythm = patterns[bar % 2] if len(patterns) > 1 else patterns[0]
+
+            pool = self._arp_pool(chord, role_range, register_shift, octaves, order)
+            if not pool:
+                continue
+            pool = self._order_pool(pool, order)
+
+            for k, (onset, dur) in enumerate(self._onsets_from_pattern(rhythm)):
+                pitch = pool[k % len(pool)]
+                pitch = snap_pitch_to_scale(pitch, scale_pcs)
+                low = role_range["min"] + register_shift * 12
+                high = role_range["max"] + register_shift * 12
+                while pitch < low:
+                    pitch += 12
+                while pitch > high:
+                    pitch -= 12
+                velocity = min(127, velocity_base - (6 if k % 2 == 1 else 0))
+                notes.append(
+                    Note(
+                        pitch=pitch,
+                        start_beat=bar * BEATS_PER_BAR + onset,
+                        duration_beat=min(note_length, max(0.05, dur)),
+                        velocity=velocity,
+                        section=section,
+                        role=role,
+                    )
+                )
+        return notes
+
+    def _arp_pool(self, chord, role_range, register_shift, octaves, order) -> list:
+        """Chord-tone pitch candidates spread across the role register."""
+        low = role_range["min"] + register_shift * 12
+        high = role_range["max"] + register_shift * 12
+        seen = set()
+        pool = []
+        for pc in chord.pitch_classes:
+            for octave in range(octaves + 1):
+                p = (pc % 12) + 12 * octave
+                while p < low:
+                    p += 12
+                while p > high:
+                    p -= 12
+                if p not in seen:
+                    seen.add(p)
+                    pool.append(p)
+        if not pool:
+            root = chord.root_pc
+            while root < low:
+                root += 12
+            while root > high:
+                root -= 12
+            pool = [root]
+        return pool
+
+    def _order_pool(self, pool: list, order: str) -> list:
+        if order == "up":
+            return sorted(pool)
+        if order == "down":
+            return sorted(pool, reverse=True)
+        if order == "updown":
+            asc = sorted(pool)
+            return asc + asc[-2:0:-1]
+        shuffled = list(pool)
+        self.rng.shuffle(shuffled)
+        return shuffled
+
+    # ------------------------------------------------------------------ #
+    # Chord stabs — staccato stacked voicings on a rhythmic grid
+    # ------------------------------------------------------------------ #
+    def generate_stab(
+        self,
+        progression,
+        scale_pcs: Set[int],
+        role: str = "stab",
+        plan=None,
+        complexity: str = "medium",
+        base_velocity: int = 100,
+    ) -> list:
+        """Return staccato chord hits (3-4 voices) on each rhythm onset."""
+        role_range = self.config["role_ranges"][role]
+        default_section = self.config.get("section_template", ["drop"])[0]
+        params = self.config.get("role_params", {}).get("stab", {})
+        duration = float(params.get("duration_beat", 0.4))
+        velocity_boost = int(params.get("velocity_boost", 8))
+
+        notes = []
+        prev_voicing = None
+        for bar, chord in enumerate(progression):
+            profile = plan[bar] if plan else None
+            density = profile.density if profile else 1.0
+            register_shift = profile.register_shift if profile else 0
+            velocity_base = profile.base_velocity if profile else base_velocity
+            section = profile.name if profile else default_section
+            shifted = {
+                "min": role_range["min"] + register_shift * 12,
+                "max": role_range["max"] + register_shift * 12,
+            }
+            voicing = self._smooth_voicing(chord, shifted, prev_voicing)
+            prev_voicing = voicing
+
+            patterns = self._patterns_for(role, complexity, density)
+            rhythm = patterns[bar % 2] if len(patterns) > 1 else patterns[0]
+            velocity = min(127, velocity_base + velocity_boost)
+            for onset, _ in self._onsets_from_pattern(rhythm):
+                for pitch in voicing:
+                    pitch = snap_pitch_to_scale(pitch, scale_pcs)
+                    while pitch < shifted["min"]:
+                        pitch += 12
+                    while pitch > shifted["max"]:
+                        pitch -= 12
+                    notes.append(
+                        Note(
+                            pitch=pitch,
+                            start_beat=bar * BEATS_PER_BAR + onset,
+                            duration_beat=duration,
+                            velocity=velocity,
+                            section=section,
+                            role=role,
+                        )
+                    )
+        return notes
+
+    # ------------------------------------------------------------------ #
+    # Counter lead — a delayed, harmonically related answering voice
+    # ------------------------------------------------------------------ #
+    def generate_counter_lead(
+        self,
+        progression,
+        scale_pcs: Set[int],
+        role: str = "counter_lead",
+        plan=None,
+        complexity: str = "medium",
+        base_velocity: int = 88,
+    ) -> list:
+        """Return a second melodic voice that answers the main lead.
+
+        Uses its own sparse rhythm profile, then shifts the whole line by
+        ``role_params["counter_lead"]["delay_beats"]`` (call & response)
+        and optionally transposes it so it harmonizes with the lead.
+        """
+        params = self.config.get("role_params", {}).get("counter_lead", {})
+        delay_beats = float(params.get("delay_beats", 1.0))
+        transpose = int(params.get("transpose", 0))
+        velocity_scale = float(params.get("velocity_scale", 0.9))
+
+        notes = self.generate_bassline(
+            progression, scale_pcs, role=role, plan=plan,
+            complexity=complexity, base_velocity=base_velocity,
+            allow_passing=True,
+        )
+        role_range = self.config["role_ranges"][role]
+        for note in notes:
+            note.start_beat += delay_beats
+            note.start_beat = max(0.0, note.start_beat)
+            if transpose:
+                note.pitch = snap_pitch_to_scale(
+                    note.pitch + transpose, scale_pcs
+                )
+                low, high = role_range["min"], role_range["max"]
+                while note.pitch < low:
+                    note.pitch += 12
+                while note.pitch > high:
+                    note.pitch -= 12
+            note.velocity = max(1, min(127, int(note.velocity * velocity_scale)))
+        return notes
+
+    # ------------------------------------------------------------------ #
     # Sustained chord voicings (pad / chord)
     # ------------------------------------------------------------------ #
     def generate_chord_track(

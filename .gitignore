@@ -12,10 +12,6 @@ venv/
 # Tests
 tests/
 
-# Specs & discussion docs (internal)
-CONTEXT_Diskusi_MIDI_Generation.md
-PROJECT_SPEC_MIDI_Composition_Engine.md
-
 # Local environment
 .env
 .DS_Store

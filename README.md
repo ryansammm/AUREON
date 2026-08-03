@@ -1,8 +1,9 @@
 # AUREON — Advanced MIDI Composition Engine
 
 Rule-based MIDI composition engine that generates genre-aware, multi-track
-music (bass, lead, chords, drums) with arrangement structure, humanized
-timing and MIDI export. 100% local and free/open-source — no cloud APIs.
+music (bass, leads, arps, chords, pads, drums) with arrangement structure,
+humanized timing and MIDI export. 100% local and free/open-source — no cloud
+APIs.
 
 Generated MIDI opens in any DAW (Ableton, FL Studio, Logic, Cubase). A
 numpy-based WAV renderer is included so you can listen to results without
@@ -10,9 +11,13 @@ a synth or soundfont.
 
 ## Features
 
-- **Genre configs** — `dubstep`, `house`, `generic` (extensible; add a JSON file).
+- **Genre configs** — 15 built-in genres (`techno`, `trance`,
+  `progressive_house`, `big_room`, `electro_house`, `house`, `dubstep`,
+  `drum_and_bass`, `trap`, `future_bass`, `hardstyle`, `psytrance`,
+  `uk_garage`, `downtempo`, `generic`); extensible — add a JSON file.
 - **Multi-track composition** — shared arrangement + chord progression across
-  `bass`, `lead`, `chord`/`pad`, and `drum` roles with register separation.
+  `bass`, `sub_bass`, `lead`, `counter_lead`, `arp`, `stab`, `chord`/`pad`,
+  `drum` and `drum_layers` roles with register separation.
 - **Arrangement & energy curve** — intro / buildup / breakdown / drop / outro
   with per-section density, register, velocity and tempo.
 - **Layer 4 candidate selection** — generates N variations and ranks them with
@@ -21,7 +26,8 @@ a synth or soundfont.
 - **MIDI automation** — CC 74 (filter cutoff) + CC 11 (expression) follow the
   energy curve; percussion on channel 10; mid-song **tempo map**; section
   **modulations** (e.g. key lift on the second drop).
-- **Local web UI** — generate, A/B-compare candidates, and listen in the browser.
+- **Local web UI (English)** — generate, A/B-compare candidates, and listen
+  in the browser.
 - **WAV render** — stereo synthesis with per-role panning, drum voices and
   reverb; plus a metrics report per track/section.
 
@@ -46,6 +52,9 @@ python cli.py --genre dubstep --role bass --key a --mode minor --bpm 140
 
 # multi-track composition with drums, ranked from 5 candidates
 python cli.py --genre house --roles bass,lead,chord,drum --candidates 5 --top 1
+
+# full 10-role composition
+python cli.py --genre dubstep --roles bass,sub_bass,lead,arp,stab,counter_lead,chord,pad,drum,drum_layers
 
 # disable humanization for A/B comparison
 python cli.py --genre dubstep --role bass --no-humanize
@@ -83,7 +92,7 @@ authentication.
 ## Tests
 
 ```bash
-python -m pytest -q     # 91 tests
+python -m pytest -q     # 128 tests
 ```
 
 ## Architecture
@@ -103,7 +112,7 @@ Layer-based pipeline (`engine/`), each layer independently testable:
 | — | `metrics.py` | per-track/section stats report |
 
 Genre configs live in `config/genres/*.json`. A genre is fully defined by
-config — no engine code changes needed (spec Phase 2 DoD).
+config — no engine code changes needed.
 
 ## Configuration highlights
 
@@ -117,19 +126,15 @@ config — no engine code changes needed (spec Phase 2 DoD).
   "swing": {"resolution": 16, "amount": 0.12},               // groove
   "drum_patterns": {                                          // 16-step strings
     "notes": {"kick": 36, "snare": 38, "hat": 42},
-    "patterns": {"drop": {"kick": "x...........x...", "snare": "........x......."}}
+    "patterns": {"drop": {"kick": "x...........x...", "snare": "........x......."}},
+    "layers": {"drop": {"shaker": ".x.x.x.x.x.x.x.x", "tom": "..............x."}}
   }
 }
 ```
 
-## Project documents
+Genre knowledge is curated in `tools/gen_genre_kb.py` and regenerated into
+`config/genres/*.json` with:
 
-- `PROJECT_SPEC_MIDI_Composition_Engine.md` — source of truth & roadmap.
-- `CONTEXT_Diskusi_MIDI_Generation.md` — design rationale.
-
-## Roadmap status
-
-- Phase 1–4 (rule-based core, arrangement, quality/humanization,
-  multi-role + interaction): **done**.
-- Phase 5–6 (neural enhancement, scoring-model upgrade): future/experimental
-  per spec — only if rule-based output is judged creatively stuck.
+```bash
+python tools\gen_genre_kb.py
+```

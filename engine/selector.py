@@ -154,13 +154,17 @@ class Selector:
     def score_composition(self, tracks: list):
         """Average per-track score across a multi-track composition.
 
-        Percussion tracks (role ``drum``) are excluded — pitch-based
-        dissonance heuristics are meaningless for drum voices.
+        Percussion tracks (roles ``drum`` and ``drum_layers``) are
+        excluded — pitch-based dissonance heuristics are meaningless for
+        percussion voices.
 
         Returns:
             Tuple of ``(mean_score, details)``.
         """
-        melodic = [t for t in tracks if getattr(t, "role", "") != "drum"]
+        melodic = [
+            t for t in tracks
+            if getattr(t, "role", "") not in ("drum", "drum_layers")
+        ]
         if not melodic:
             return 0.0, {"score": 0.0}
         details_list = [self.score_track(t)[1] for t in melodic]

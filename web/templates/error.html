@@ -1,19 +1,30 @@
 <!doctype html>
-<html lang="id">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Error — MIDI Composition Engine</title>
+  <title>Error — AUREON MIDI Engine</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <main>
-    <h1>Gagal generate</h1>
-    <div class="error-box">
-      <p><strong>{{ error }}</strong></p>
-      <p class="hint">Periksa parameter: key harus huruf (a-g), bars > 0, candidates 1-20.</p>
-    </div>
-    <p><a href="/?genre={{ genre }}">Kembali &amp; coba lagi</a></p>
+  <div class="bg-glow" aria-hidden="true"></div>
+
+  <main class="page">
+    <header class="hero compact">
+      <div class="hero-badge">Error</div>
+      <h1>Failed to <span class="accent">generate</span></h1>
+    </header>
+
+    <section class="card error-card">
+      <div class="error-icon" aria-hidden="true">!</div>
+      <p class="error-msg"><strong>{{ error }}</strong></p>
+      <p class="hint">Check the parameters: key must be a letter <code>a</code>–<code>g</code> (e.g. <code>a</code>, <code>f#</code>), bars &gt; 0, candidates 1–20, seed a number.</p>
+      <a class="btn primary" href="/?genre={{ genre }}">Back &amp; try again</a>
+    </section>
   </main>
+
+  <footer class="credit">
+    <span>Developed by <strong>XYKS</strong></span>
+  </footer>
 </body>
 </html>

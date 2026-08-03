@@ -1,5 +1,5 @@
 {
-  "genre": "house",
+  "genre": "progressive_house",
   "default_bpm": 126,
   "time_signature": [
     4,
@@ -9,7 +9,8 @@
   "default_mode": "major",
   "scale_pool": [
     "major",
-    "dorian"
+    "dorian",
+    "natural_minor"
   ],
   "chord_pool": [
     {
@@ -17,56 +18,35 @@
       "weight": 1.0
     },
     {
-      "degree": "IV",
-      "weight": 0.8
-    },
-    {
       "degree": "V",
-      "weight": 0.7
+      "weight": 0.9
     },
     {
       "degree": "vi",
-      "weight": 0.6
+      "weight": 0.7
     },
     {
-      "degree": "ii",
-      "weight": 0.5
-    },
-    {
-      "degree": "iii",
-      "weight": 0.3
+      "degree": "IV",
+      "weight": 0.7
     }
   ],
   "transition_matrix": {
     "I": {
-      "IV": 0.3,
-      "V": 0.3,
-      "vi": 0.25,
-      "ii": 0.15
+      "V": 0.45,
+      "vi": 0.3,
+      "IV": 0.25
+    },
+    "V": {
+      "I": 0.55,
+      "vi": 0.45
+    },
+    "vi": {
+      "IV": 0.5,
+      "V": 0.5
     },
     "IV": {
       "V": 0.4,
-      "I": 0.3,
-      "ii": 0.3
-    },
-    "V": {
-      "I": 0.6,
-      "vi": 0.25,
-      "IV": 0.15
-    },
-    "vi": {
-      "IV": 0.4,
-      "V": 0.3,
-      "ii": 0.3
-    },
-    "ii": {
-      "V": 0.5,
-      "IV": 0.3,
-      "I": 0.2
-    },
-    "iii": {
-      "vi": 0.6,
-      "IV": 0.4
+      "I": 0.6
     }
   },
   "role_ranges": {
@@ -88,7 +68,7 @@
     "chord": {
       "min": 48,
       "max": 84,
-      "preferred": 60
+      "preferred": 62
     },
     "arp": {
       "min": 60,
@@ -96,9 +76,9 @@
       "preferred": 72
     },
     "stab": {
-      "min": 52,
-      "max": 84,
-      "preferred": 67
+      "min": 55,
+      "max": 88,
+      "preferred": 72
     },
     "sub_bass": {
       "min": 24,
@@ -113,12 +93,12 @@
   },
   "role_params": {
     "arp": {
-      "order": "up",
-      "note_length": 0.22,
+      "order": "updown",
+      "note_length": 0.24,
       "octave_span": 2
     },
     "stab": {
-      "duration_beat": 0.35,
+      "duration_beat": 0.4,
       "velocity_boost": 8
     },
     "counter_lead": {
@@ -215,49 +195,52 @@
   "lead_patterns": {
     "simple": [
       [
-        4,
-        4,
-        4,
-        4
+        16
       ],
       [
         8,
         8
       ],
       [
-        16
+        4,
+        4,
+        4,
+        4
       ]
     ],
     "medium": [
       [
-        2,
-        2,
+        8,
+        8
+      ],
+      [
         4,
-        2,
-        2,
+        4,
+        4,
         4
       ],
       [
-        4,
-        4,
         2,
         2,
-        2,
-        2
-      ],
-      [
-        2,
         4,
-        4,
+        2,
         2,
         4
       ]
     ],
     "complex": [
       [
-        1,
-        1,
         2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      [
+        4,
         2,
         2,
         2,
@@ -267,27 +250,12 @@
       ],
       [
         2,
-        2,
+        4,
         1,
         1,
-        2,
-        1,
-        1,
-        2,
+        4,
         2,
         2
-      ],
-      [
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        2,
-        2,
-        2,
-        4
       ]
     ]
   },
@@ -527,20 +495,23 @@
     "breakdown",
     "build",
     "drop",
+    "drop2",
     "outro"
   ],
   "section_bars": {
     "intro": 2,
     "breakdown": 4,
-    "build": 4,
+    "build": 8,
     "drop": 4,
+    "drop2": 4,
     "outro": 2
   },
   "section_density": {
     "intro": 0.3,
     "breakdown": 0.25,
-    "build": 0.6,
-    "drop": 0.85,
+    "build": 0.7,
+    "drop": 1.0,
+    "drop2": 1.0,
     "outro": 0.3
   },
   "section_register": {
@@ -548,20 +519,22 @@
     "breakdown": 1,
     "build": 0,
     "drop": 0,
+    "drop2": 0,
     "outro": 0
   },
   "section_velocity": {
     "intro": 72,
-    "breakdown": 78,
-    "build": 88,
+    "breakdown": 76,
+    "build": 86,
     "drop": 100,
+    "drop2": 100,
     "outro": 70
   },
   "automation": {
     "enabled": true,
     "cc74_range": [
       25,
-      118
+      120
     ],
     "cc11": true
   },
@@ -571,7 +544,7 @@
   },
   "swing": {
     "resolution": 8,
-    "amount": 0.22
+    "amount": 0.1
   },
   "selector_weights": {
     "dissonance": 1.0,
@@ -650,43 +623,43 @@
   },
   "instrument_intent": {
     "bass": {
-      "label": "Bass - Deep House",
-      "preset": "deep_bass / analog_synth"
+      "label": "Bass - Deep (Progressive House)",
+      "preset": "deep_bass"
     },
     "sub_bass": {
-      "label": "Sub Bass (house)",
+      "label": "Sub Bass (progressive_house)",
       "preset": "sub_bass_low / sine"
     },
     "lead": {
-      "label": "Lead - Stab (House)",
-      "preset": "stab_pluck / chord_stab"
+      "label": "Lead - Melodic (Progressive House)",
+      "preset": "pluck_lead"
     },
     "arp": {
-      "label": "Arp (house)",
-      "preset": "pluck_synth / arp_synth"
+      "label": "Arp - Pulse (Progressive House)",
+      "preset": "pluck_synth"
     },
     "stab": {
-      "label": "Stab (house)",
+      "label": "Stab (progressive_house)",
       "preset": "chord_stab / detuned_synth"
     },
     "counter_lead": {
-      "label": "Counter Lead (house)",
+      "label": "Counter Lead (progressive_house)",
       "preset": "lead_synth_2 / square"
     },
     "pad": {
-      "label": "Pad - Warm (House)",
-      "preset": "warm_pad / string_pad"
+      "label": "Pad (progressive_house)",
+      "preset": "pad_synth / dark_pad"
     },
     "chord": {
-      "label": "Chord - Warm Stabs (House)",
-      "preset": "chord_stabs / rhodes"
+      "label": "Chord (progressive_house)",
+      "preset": "chord_synth / rhodes"
     },
     "drum": {
-      "label": "Drums - 4 on Floor (House)",
-      "preset": "house_kit / 909_kit"
+      "label": "Drums - 4x4 (Progressive House)",
+      "preset": "prog_house_kit"
     },
     "drum_layers": {
-      "label": "Drum Layers - Percussion (house)",
+      "label": "Drum Layers - Percussion (progressive_house)",
       "preset": "electronic_percussion"
     }
   }

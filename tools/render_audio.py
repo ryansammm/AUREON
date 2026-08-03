@@ -19,8 +19,15 @@ from mido import MidiFile
 
 SAMPLE_RATE = 44100
 
-ROLE_PAN = {"bass": 0.0, "lead": 0.05, "pad": -0.3, "chord": 0.3}
-ROLE_GAIN = {"bass": 0.60, "lead": 0.50, "pad": 0.42, "chord": 0.42, "drum": 0.78}
+ROLE_PAN = {
+    "bass": 0.0, "sub_bass": 0.0, "lead": 0.05, "counter_lead": -0.15,
+    "pad": -0.3, "chord": 0.3, "arp": 0.15, "stab": 0.2, "drum": 0.0,
+}
+ROLE_GAIN = {
+    "bass": 0.60, "sub_bass": 0.62, "lead": 0.50, "counter_lead": 0.40,
+    "pad": 0.42, "chord": 0.42, "arp": 0.42, "stab": 0.48, "drum": 0.78,
+    "drum_layers": 0.55,
+}
 DRUM_PAN = {
     35: 0.0, 36: 0.0,          # kick
     38: 0.0, 40: 0.05,         # snare
@@ -58,15 +65,25 @@ def build_note_events(track, tpb: int, seconds_per_tick: float) -> list:
 
 def track_role(track_name: str, notes: list) -> str:
     name = (track_name or "").lower()
-    if any(k in name for k in ("drum", "kit", "percussion")):
+    if "layer" in name or "percussion" in name:
+        return "drum_layers"
+    if any(k in name for k in ("drum", "kit")):
         return "drum"
     if notes and notes[0][4] == 9:
         return "drum"
-    if any(k in name for k in ("bass", "sub")):
+    if "sub" in name:
+        return "sub_bass"
+    if "stab" in name:
+        return "stab"
+    if "arp" in name or "pluck" in name:
+        return "arp"
+    if "counter" in name:
+        return "counter_lead"
+    if "bass" in name:
         return "bass"
-    if any(k in name for k in ("pad", "chord")):
+    if "pad" in name or "chord" in name:
         return "pad"
-    if any(k in name for k in ("lead", "pluck", "stab")):
+    if "lead" in name:
         return "lead"
     pitches = [n[2] for n in notes]
     mean = sum(pitches) / len(pitches) if pitches else 0
@@ -214,17 +231,19 @@ def render_to_wav(
         t0 = int(start * SAMPLE_RATE)
         n = max(int(dur * SAMPLE_RATE), 1)
         t = np.arange(n) / SAMPLE_RATE
-        if role == "drum":
+        if role in ("drum", "drum_layers"):
             sig = drum_waveform(pitch, t)
             pan = DRUM_PAN.get(pitch, 0.0)
-            amp = (vel / 127) ** 0.7 * gains.get("drum", 0.78) * gain
+            amp = (vel / 127) ** 0.7 * gains.get(role, 0.78) * gain
             env = np.ones(n)
         else:
-            kind = {"bass": "saw", "lead": "square", "pad": "pad"}[role]
+            kind = {"bass": "saw", "sub_bass": "saw", "lead": "square",
+                    "counter_lead": "square", "pad": "pad", "chord": "pad",
+                    "arp": "square", "stab": "square"}.get(role, "square")
             sig = melodic_waveform(kind, freq, t)
             pan = ROLE_PAN.get(role, 0.0)
             amp = (vel / 127) ** 0.7 * gains.get(role, 0.5) * gain
-            env = envelope(t, dur, role == "pad")
+            env = envelope(t, dur, role in ("pad", "chord"))
         gl, gr = pan_gains(pan)
         seg = sig * env * amp
         buf_l[t0:t0 + n] += seg * gl

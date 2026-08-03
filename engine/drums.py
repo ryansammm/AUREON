@@ -25,6 +25,7 @@ from .models import Note, Track
 BEATS_PER_BAR = 4.0
 STEP_BEAT = 0.25
 DEFAULT_DRUM_NOTES = {"kick": 36, "snare": 38, "clap": 39, "hat": 42, "hat_open": 46, "crash": 49}
+DEFAULT_LAYER_NOTES = {"perc": 60, "tom": 50, "cymbal": 51, "shaker": 70}
 DEFAULT_VELOCITY = 92
 ACCENT_VELOCITY = 110
 
@@ -92,6 +93,91 @@ class DrumEngine:
         }
         return Track(
             role="drum",
+            track_name=intent["label"],
+            suggested_preset=intent["preset"],
+            notes=notes,
+            channel=9,
+        )
+
+    # ------------------------------------------------------------------ #
+    # Drum layers — extra percussion (percs/toms/cymbals) + transition fills
+    # ------------------------------------------------------------------ #
+    def generate_layers(self, plan: list, humanize=True, bpm=140, seed=None) -> Track:
+        """Return a :class:`Track` with role ``drum_layers``.
+
+        Reads ``drum_patterns["layers"]`` (per-section step strings for
+        extra percussion voices) plus an optional fill engine: before a
+        section whose density is higher than the current one, a 16th-note
+        roll on the configured fill voices closes out the last bar so the
+        transition "lifts" into the drop.
+        """
+        from .humanizer import Humanizer
+
+        drum_cfg = self.config.get("drum_patterns") or {}
+        layer_notes = {**DEFAULT_LAYER_NOTES, **(drum_cfg.get("layer_notes") or {})}
+        layers = drum_cfg.get("layers") or {}
+        fill_cfg = drum_cfg.get("fills") or {}
+        fill_enabled = fill_cfg.get("enabled", True)
+        fill_voices = [
+            v for v in fill_cfg.get("voices", ["perc", "tom"]) if v in layer_notes
+        ]
+        fill_beats = float(fill_cfg.get("beats", 1))
+
+        notes = []
+        for idx, sb in enumerate(plan):
+            base_velocity = int(sb.base_velocity * 0.9)
+            next_density = plan[idx + 1].density if idx + 1 < len(plan) else 0.0
+            fill_here = (
+                fill_enabled
+                and fill_voices
+                and next_density > sb.density + 0.15
+            )
+
+            section_layers = layers.get(sb.name) or {}
+            for voice, pattern in section_layers.items():
+                note_number = layer_notes.get(voice)
+                if note_number is None:
+                    continue
+                for step, char in enumerate(pattern):
+                    velocity = self._velocity_for(char, base_velocity)
+                    if velocity == 0:
+                        continue
+                    notes.append(
+                        Note(
+                            pitch=note_number,
+                            start_beat=sb.bar * BEATS_PER_BAR + step * STEP_BEAT,
+                            duration_beat=STEP_BEAT * 0.9 if voice in ("shaker", "cymbal") else STEP_BEAT,
+                            velocity=velocity,
+                            section=sb.name,
+                            role="drum_layers",
+                        )
+                    )
+
+            if fill_here:
+                start16 = 16 - int(round(fill_beats * 4))
+                for k in range(start16, 16):
+                    for voice in fill_voices:
+                        velocity = min(127, int(base_velocity * (0.7 + 0.4 * (k - start16) / max(1, 15 - start16))))
+                        notes.append(
+                            Note(
+                                pitch=layer_notes[voice],
+                                start_beat=sb.bar * BEATS_PER_BAR + k * STEP_BEAT,
+                                duration_beat=STEP_BEAT * 0.8,
+                                velocity=velocity,
+                                section=sb.name,
+                                role="drum_layers",
+                            )
+                        )
+
+        if humanize:
+            Humanizer(self.config, seed).humanize(notes, bpm)
+
+        intent = self.config.get("instrument_intent", {}).get("drum_layers") or {
+            "label": "Drum Layers - Percussion",
+            "preset": "electronic_percussion",
+        }
+        return Track(
+            role="drum_layers",
             track_name=intent["label"],
             suggested_preset=intent["preset"],
             notes=notes,

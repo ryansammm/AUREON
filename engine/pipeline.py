@@ -15,6 +15,8 @@ from .melody import MelodicEngine, CHORD_ROLES
 from .models import Track
 from .music_utils import get_scale_pitch_classes
 
+PERCUSSION_ROLES = {"drum", "drum_layers"}
+
 
 def build_tempo_map(config: dict, plan: list, bpm: int) -> list:
     """Build ``[(beat, bpm), ...]`` from per-section tempo multipliers.
@@ -59,7 +61,7 @@ def apply_modulations(config: dict, tracks: list, plan: list) -> list:
         if not bar_bounds:
             continue
         for track in tracks:
-            if getattr(track, "role", "") == "drum":
+            if getattr(track, "role", "") in PERCUSSION_ROLES:
                 continue
             for note in track.notes:
                 bar = int(note.start_beat // 4.0)
@@ -88,6 +90,8 @@ def build_cc_automation(config: dict, plan: list, role: str) -> list:
         List of ``(start_beat, cc_number, value)`` tuples.
     """
     if role == "drum":
+        return []
+    if role == "drum_layers":
         return []
     cfg = config.get("automation") or {}
     if cfg.get("enabled") is False:
@@ -135,10 +139,10 @@ def generate_track(
         Tuple of (``Track``, list of :class:`ChordBar`, list of
         :class:`SectionBar`).
     """
-    if role != "drum" and role not in config["role_ranges"]:
+    if role != "drum" and role != "drum_layers" and role not in config["role_ranges"]:
         raise ValueError(
             f"role '{role}' not defined in genre config "
-            f"(available: {sorted(config['role_ranges']) + ['drum']})"
+            f"(available: {sorted(config['role_ranges']) + ['drum', 'drum_layers']})"
         )
     bpm = bpm or config["default_bpm"]
     scale_name = scale_name or pick_scale_from_pool(config, mode, seed)
@@ -151,11 +155,11 @@ def generate_track(
     progression = harmony.generate_progression(key_root, mode, len(plan))
 
     melody = MelodicEngine(config, seed)
-    if role == "drum":
+    if role in PERCUSSION_ROLES:
         notes = []
     else:
-        notes = melody.generate_bassline(
-            progression, scale_pcs, role=role, plan=plan, complexity=complexity
+        notes = _role_notes(
+            melody, role, progression, scale_pcs, plan, complexity
         )
 
     if humanize and notes:
@@ -163,6 +167,10 @@ def generate_track(
 
     if role == "drum":
         track = DrumEngine(config, seed).generate_track(
+            plan, humanize=humanize, bpm=bpm, seed=seed
+        )
+    elif role == "drum_layers":
+        track = DrumEngine(config, seed).generate_layers(
             plan, humanize=humanize, bpm=bpm, seed=seed
         )
     else:
@@ -176,6 +184,32 @@ def generate_track(
     track.cc = build_cc_automation(config, plan, role)
     apply_modulations(config, [track], plan)
     return track, progression, plan
+
+
+def _role_notes(melody, role, progression, scale_pcs, plan, complexity):
+    """Route a melodic role to its generator and return the notes."""
+    if role in CHORD_ROLES:
+        return melody.generate_chord_track(progression, scale_pcs, role=role, plan=plan)
+    if role == "lead":
+        return melody.generate_bassline(
+            progression, scale_pcs, role=role, plan=plan,
+            complexity=complexity, allow_passing=True,
+        )
+    if role == "arp":
+        return melody.generate_arp(
+            progression, scale_pcs, role=role, plan=plan, complexity=complexity
+        )
+    if role == "stab":
+        return melody.generate_stab(
+            progression, scale_pcs, role=role, plan=plan, complexity=complexity
+        )
+    if role == "counter_lead":
+        return melody.generate_counter_lead(
+            progression, scale_pcs, role=role, plan=plan, complexity=complexity
+        )
+    return melody.generate_bassline(
+        progression, scale_pcs, role=role, plan=plan, complexity=complexity
+    )
 
 
 def generate_composition(
@@ -204,10 +238,10 @@ def generate_composition(
     if not roles:
         raise ValueError("roles must not be empty")
     for role in roles:
-        if role != "drum" and role not in config["role_ranges"]:
+        if role not in PERCUSSION_ROLES and role not in config["role_ranges"]:
             raise ValueError(
                 f"role '{role}' not defined in genre config "
-                f"(available: {sorted(config['role_ranges']) + ['drum']})"
+                f"(available: {sorted(config['role_ranges']) + ['drum', 'drum_layers']})"
             )
     bpm = bpm or config["default_bpm"]
     scale_name = scale_name or pick_scale_from_pool(config, mode, seed)
@@ -229,20 +263,16 @@ def generate_composition(
             track.cc = build_cc_automation(config, plan, role)
             tracks.append(track)
             continue
-        if role in CHORD_ROLES:
-            notes = melody.generate_chord_track(
-                progression, scale_pcs, role=role, plan=plan
+        if role == "drum_layers":
+            track = DrumEngine(config, seed).generate_layers(
+                plan, humanize=humanize, bpm=bpm, seed=seed
             )
-        elif role == "lead":
-            notes = melody.generate_bassline(
-                progression, scale_pcs, role=role, plan=plan,
-                complexity=complexity, allow_passing=True,
-            )
-        else:
-            notes = melody.generate_bassline(
-                progression, scale_pcs, role=role, plan=plan,
-                complexity=complexity,
-            )
+            track.cc = build_cc_automation(config, plan, role)
+            tracks.append(track)
+            continue
+        notes = _role_notes(
+            melody, role, progression, scale_pcs, plan, complexity
+        )
         if humanize:
             Humanizer(config, seed).humanize(notes, bpm)
         intent = config["instrument_intent"][role]

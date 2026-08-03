@@ -100,7 +100,8 @@ def index():
     return render_template(
         "index.html",
         genres=available_genres(),
-        roles=["bass", "lead", "chord", "pad", "drum"],
+        roles=["bass", "lead", "chord", "pad", "arp", "stab", "sub_bass",
+               "counter_lead", "drum", "drum_layers"],
         defaults=request.args,
     )
 

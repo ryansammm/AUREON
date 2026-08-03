@@ -84,21 +84,21 @@ def _run_pipeline(config, roles, key_root, mode, bpm, bars, complexity,
             roles[0], key_root, mode, bars=bars, complexity=complexity,
             count=candidates, base_seed=seed, humanize=humanize, roles=roles,
         )
-        selector = Selector(config, seed=seed)
+        selector = Selector(config, seed=seed, key_root=key_root, mode=mode)
         multi = len(roles) > 1
         score_key = (
-            lambda c: selector.score_composition(c[0])[0]
+            lambda c: selector.score_composition(c[0], c[1])[0]
             if multi
-            else selector.score_track(c[0][0])[0]
+            else selector.score_track(c[0][0], c[1])[0]
         )
         ranked = sorted(candidates_list, key=score_key, reverse=True)
         tracks, progression, plan = ranked[0][0], ranked[0][1], ranked[0][2]
         summary = []
-        for i, (c_tracks, _, _, c_seed) in enumerate(ranked, start=1):
+        for i, (c_tracks, c_prog, _, c_seed) in enumerate(ranked, start=1):
             score, _ = (
-                selector.score_composition(c_tracks)
+                selector.score_composition(c_tracks, c_prog)
                 if multi
-                else selector.score_track(c_tracks[0])
+                else selector.score_track(c_tracks[0], c_prog)
             )
             summary.append({"rank": i, "seed": c_seed, "score": round(score, 3),
                             "tracks": c_tracks})

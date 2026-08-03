@@ -126,10 +126,10 @@ def main(argv=None) -> int:
                 count=args.candidates, base_seed=args.seed, humanize=humanize,
                 roles=roles,
             )
-            selector = Selector(config, seed=args.seed)
+            selector = Selector(config, seed=args.seed, key_root=key_root, mode=mode)
             score_key = (
-                lambda c: selector.score_composition(c[0])[0] if multi
-                else selector.score_track(c[0][0])[0]
+                lambda c: selector.score_composition(c[0], c[1])[0] if multi
+                else selector.score_track(c[0][0], c[1])[0]
             )
             ranked = sorted(candidates, key=score_key, reverse=True)
 
@@ -187,12 +187,12 @@ def main(argv=None) -> int:
                     )
 
         if args.candidates > 1:
-            selector = Selector(config, seed=args.seed)
+            selector = Selector(config, seed=args.seed, key_root=key_root, mode=mode)
             print(f"\nranking ({args.candidates} candidates, seed base {args.seed}):")
-            for rank_index, (tracks, _, _, seed) in enumerate(ranked, start=1):
+            for rank_index, (tracks, progression, _, seed) in enumerate(ranked, start=1):
                 score, det = (
-                    selector.score_composition(tracks) if multi
-                    else selector.score_track(tracks[0])
+                    selector.score_composition(tracks, progression) if multi
+                    else selector.score_track(tracks[0], progression)
                 )
                 detail = (
                     f"(mean of {len(tracks)} tracks)"
@@ -200,7 +200,12 @@ def main(argv=None) -> int:
                     else (
                         f"(dissonance={det['dissonance']:.2f}, "
                         f"repetition={det['repetition']:.2f}, "
-                        f"voice_leading={det['voice_leading']:.2f})"
+                        f"voice_leading={det['voice_leading']:.2f}, "
+                        f"tonality={det['tonality']:.2f}, "
+                        f"chord_tone={det['chord_tone']:.2f}, "
+                        f"pitch_variety={det['pitch_variety']:.2f}, "
+                        f"density={det['density']:.2f}, "
+                        f"range={det['range']:.2f})"
                     )
                 )
                 print(f"  #{rank_index} seed={seed} score={score:.3f} {detail}")

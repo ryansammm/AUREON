@@ -22,8 +22,10 @@ a synth or soundfont.
   with per-section density, register, velocity and tempo; long requests
   (up to ~280 bars / ~5 min) expand into repeated build-up/drop loops with
   a single intro and outro instead of blindly re-tiling the template.
-- **Layer 4 candidate selection** — generates N variations and ranks them with
-  music-theory heuristics (dissonance, repetition, voice leading).
+- **Layer 4 candidate selection** — generates N variations and ranks them with an
+  ensemble score: theory heuristics (dissonance, repetition, voice leading) plus
+  statistical features (tonality in-key rate, chord-tone alignment, pitch variety,
+  density balance, register adherence).
 - **Humanization** — micro-timing, velocity arcs, and per-genre **swing/groove**.
 - **MIDI automation** — CC 74 (filter cutoff) + CC 11 (expression) follow the
   energy curve; percussion on channel 10; mid-song **tempo map**; section
@@ -98,7 +100,7 @@ authentication.
 ## Tests
 
 ```bash
-python -m pytest -q     # 128 tests
+python -m pytest -q     # 135 tests
 ```
 
 ## Architecture
@@ -111,7 +113,7 @@ Layer-based pipeline (`engine/`), each layer independently testable:
 | 1 | `harmony.py` | chord progression (weighted pool + transition matrix) |
 | 2 | `melody.py` / `drums.py` | bass/lead lines, chord voicings, drum patterns |
 | 3 | `arrangement.py` | section plan + energy curve |
-| 4 | `selector.py` | candidate generation + theory scoring |
+| 4 | `selector.py` | candidate generation + ensemble scoring |
 | 5 | `humanizer.py` | micro-timing, velocity, swing |
 | 6 | `exporter.py` | Type-1 multi-track MIDI, CC, tempo map |
 | — | `pipeline.py` | wires 0→6; multi-role composition; CC/tempo/modulation |

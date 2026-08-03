@@ -120,6 +120,8 @@ def generate_track(
     scale_name: str = None,
     humanize: bool = True,
     bpm: int = None,
+    progression_degrees: list = None,
+    motif: list = None,
 ):
     """Generate one track (arrangement + progression + bassline) for a role.
 
@@ -152,14 +154,16 @@ def generate_track(
     plan = arrangement.build_plan(bars)
 
     harmony = HarmonicEngine(config, seed)
-    progression = harmony.generate_progression(key_root, mode, len(plan))
+    progression = harmony.generate_progression(
+        key_root, mode, len(plan), degrees=progression_degrees
+    )
 
     melody = MelodicEngine(config, seed)
     if role in PERCUSSION_ROLES:
         notes = []
     else:
         notes = _role_notes(
-            melody, role, progression, scale_pcs, plan, complexity
+            melody, role, progression, scale_pcs, plan, complexity, motif=motif
         )
 
     if humanize and notes:
@@ -186,14 +190,14 @@ def generate_track(
     return track, progression, plan
 
 
-def _role_notes(melody, role, progression, scale_pcs, plan, complexity):
+def _role_notes(melody, role, progression, scale_pcs, plan, complexity, motif=None):
     """Route a melodic role to its generator and return the notes."""
     if role in CHORD_ROLES:
         return melody.generate_chord_track(progression, scale_pcs, role=role, plan=plan)
     if role == "lead":
         return melody.generate_bassline(
             progression, scale_pcs, role=role, plan=plan,
-            complexity=complexity, allow_passing=True,
+            complexity=complexity, allow_passing=True, motif=motif,
         )
     if role == "arp":
         return melody.generate_arp(
@@ -208,7 +212,8 @@ def _role_notes(melody, role, progression, scale_pcs, plan, complexity):
             progression, scale_pcs, role=role, plan=plan, complexity=complexity
         )
     return melody.generate_bassline(
-        progression, scale_pcs, role=role, plan=plan, complexity=complexity
+        progression, scale_pcs, role=role, plan=plan, complexity=complexity,
+        motif=motif,
     )
 
 
@@ -223,6 +228,8 @@ def generate_composition(
     scale_name: str = None,
     humanize: bool = True,
     bpm: int = None,
+    progression_degrees: list = None,
+    motif: list = None,
 ):
     """Generate several tracks (e.g. bass + lead + chord) at once.
 
@@ -251,7 +258,9 @@ def generate_composition(
     plan = arrangement.build_plan(bars)
 
     harmony = HarmonicEngine(config, seed)
-    progression = harmony.generate_progression(key_root, mode, len(plan))
+    progression = harmony.generate_progression(
+        key_root, mode, len(plan), degrees=progression_degrees
+    )
 
     melody = MelodicEngine(config, seed)
     tracks = []
@@ -271,7 +280,7 @@ def generate_composition(
             tracks.append(track)
             continue
         notes = _role_notes(
-            melody, role, progression, scale_pcs, plan, complexity
+            melody, role, progression, scale_pcs, plan, complexity, motif=motif
         )
         if humanize:
             Humanizer(config, seed).humanize(notes, bpm)

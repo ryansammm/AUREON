@@ -20,5 +20,10 @@ tests/
 output/*
 !output/.gitkeep
 
+# Frontend build artifacts
+node_modules/
+web/frontend/node_modules/
+web/frontend/dist/
+
 # Internal progress logs — never pushed
 logs/

@@ -87,11 +87,16 @@ class CandidateGenerator:
         base_seed: int = None,
         humanize: bool = True,
         roles: list = None,
+        progression_degrees: list = None,
+        motif: list = None,
     ) -> list:
         """Return ``count`` candidates.
 
         Each candidate is ``(tracks, progression, plan, seed)`` where
-        ``tracks`` is a list of :class:`Track` (one per role).
+        ``tracks`` is a list of :class:`Track` (one per role). Optional
+        ``progression_degrees``/``motif`` (from the LLM ideation layer)
+        are shared by every candidate so the seeded variations realize
+        the same AI idea.
         """
         roles = roles or [role]
         base = base_seed if base_seed is not None else self.rng.randint(0, 10**6)
@@ -108,6 +113,8 @@ class CandidateGenerator:
                     complexity=complexity,
                     seed=seed,
                     humanize=humanize,
+                    progression_degrees=progression_degrees,
+                    motif=motif,
                 )
             else:
                 track, progression, plan = generate_track(
@@ -119,6 +126,8 @@ class CandidateGenerator:
                     complexity=complexity,
                     seed=seed,
                     humanize=humanize,
+                    progression_degrees=progression_degrees,
+                    motif=motif,
                 )
                 tracks = [track]
             candidates.append((tracks, progression, plan, seed))

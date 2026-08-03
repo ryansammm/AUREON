@@ -25,7 +25,7 @@ class HarmonicEngine:
         self.rng = random.Random(seed)
 
     def generate_progression(
-        self, key_root: str, mode: str, num_bars: int
+        self, key_root: str, mode: str, num_bars: int, degrees: list = None
     ) -> list:
         """Return one :class:`ChordBar` per bar.
 
@@ -33,13 +33,21 @@ class HarmonicEngine:
             key_root: tonic letter, e.g. ``"a"``.
             mode: ``"minor"`` or ``"major"``.
             num_bars: number of bars in the progression.
+            degrees: optional fixed sequence of Roman numeral degrees
+                (from the LLM ideation layer); tiled/truncated to
+                ``num_bars``. ``None`` walks the genre transition matrix.
         """
         if num_bars < 1:
             raise ValueError("num_bars must be >= 1")
-        degrees = self._walk_chords(num_bars)
+        if degrees:
+            degree_list = [
+                degrees[bar % len(degrees)] for bar in range(num_bars)
+            ]
+        else:
+            degree_list = self._walk_chords(num_bars)
         return [
             self._chord_bar(bar, degree, key_root, mode)
-            for bar, degree in enumerate(degrees)
+            for bar, degree in enumerate(degree_list)
         ]
 
     def _walk_chords(self, num_bars: int) -> list:

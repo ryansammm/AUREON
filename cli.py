@@ -53,6 +53,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--render", action="store_true",
                         help="also render each exported .mid to .wav (A/B listening)")
     parser.add_argument("--output", default=None, help="output .mid path")
+    parser.add_argument("--ai", action="store_true",
+                        help="Phase 5: ask Gemini/Groq for an idea "
+                             "(progression + motif), then use it")
+    parser.add_argument("--prompt", default=None,
+                        help="vibe prompt sent to the LLM with --ai")
+    parser.add_argument("--ai-score", action="store_true",
+                        help="Phase 5: let the LLM re-score candidate ranking "
+                             "(needs --ai and --candidates > 1)")
     parser.add_argument("-v", "--verbose", action="store_true", help="show warning logs")
     return parser
 
@@ -75,6 +83,24 @@ def _render_to_wav(mid_path: str, wav_path: str) -> None:
     render_to_wav(Path(mid_path), Path(wav_path))
 
 
+def _ai_idea(args, config, key_root, mode, roles):
+    """Return (idea_dict, note). idea_dict is None if AI disabled/offline."""
+    if not args.ai:
+        return None, None
+    from engine.ideation import LLMIdeator
+
+    ideator = LLMIdeator(config)
+    if not ideator.available():
+        return None, "AI not configured: set GEMINI_API_KEY / GROQ_API_KEY in a .env file"
+    try:
+        idea = ideator.generate_idea(
+            key_root, mode, roles, bars=args.bars, prompt=args.prompt
+        )
+        return idea, None
+    except Exception as exc:
+        return None, f"AI idea failed, using rule-based ({exc})"
+
+
 def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
     if args.verbose:
@@ -90,6 +116,17 @@ def main(argv=None) -> int:
         roles = [r.strip() for r in args.roles.split(",")] if args.roles else [args.role]
         multi = len(roles) > 1
 
+        ai_idea, ai_note = _ai_idea(args, config, key_root, mode, roles)
+        degrees = ai_idea.get("progression") if ai_idea else None
+        motif = ai_idea.get("motif") if ai_idea else None
+        if ai_idea:
+            print(f"ai idea   : {ai_idea['description']}")
+            print(f"ai prog   : {' -> '.join(ai_idea['progression'])}")
+            print(f"ai motif  : {', '.join(map(str, ai_idea['motif']))} "
+                  f"(provider: {ai_idea['provider']})")
+        if ai_note:
+            print(f"ai note   : {ai_note}")
+
         ranked = None
         if args.candidates <= 1:
             if multi:
@@ -103,6 +140,8 @@ def main(argv=None) -> int:
                     seed=args.seed,
                     humanize=humanize,
                     bpm=bpm,
+                    progression_degrees=degrees,
+                    motif=motif,
                 )
             else:
                 track, progression, plan = generate_track(
@@ -115,6 +154,8 @@ def main(argv=None) -> int:
                     seed=args.seed,
                     humanize=humanize,
                     bpm=bpm,
+                    progression_degrees=degrees,
+                    motif=motif,
                 )
                 tracks = [track]
             ranked = [(tracks, progression, plan, args.seed)]
@@ -125,6 +166,8 @@ def main(argv=None) -> int:
                 bars=args.bars, complexity=args.complexity,
                 count=args.candidates, base_seed=args.seed, humanize=humanize,
                 roles=roles,
+                progression_degrees=degrees,
+                motif=motif,
             )
             selector = Selector(config, seed=args.seed, key_root=key_root, mode=mode)
             score_key = (
@@ -132,6 +175,37 @@ def main(argv=None) -> int:
                 else selector.score_track(c[0][0], c[1])[0]
             )
             ranked = sorted(candidates, key=score_key, reverse=True)
+
+            if args.ai_score and ai_idea and len(ranked) > 1:
+                from engine.ai_scorer import AIScorer, build_candidate_summary
+
+                try:
+                    scorer = AIScorer(config)
+                    summaries = [
+                        build_candidate_summary(c[0], c[1], idx)
+                        for idx, c in enumerate(ranked)
+                    ]
+                    ai_scores, _provider = scorer.score_candidates(
+                        summaries, key_root, mode
+                    )
+
+                    def _combined(c, idx):
+                        base = (
+                            selector.score_composition(c[0], c[1])[0] if multi
+                            else selector.score_track(c[0][0], c[1])[0]
+                        )
+                        ai = ai_scores.get(idx, {}).get("score", 5.0)
+                        return base + (ai - 5.0) * 0.05
+
+                    reindexed = sorted(
+                        enumerate(ranked),
+                        key=lambda t: _combined(t[1], t[0]),
+                        reverse=True,
+                    )
+                    ranked = [c for _, c in reindexed]
+                    print(f"ai score  : re-ranked {len(ranked)} candidates")
+                except Exception as exc:
+                    print(f"ai score  : failed, kept rule-based ranking ({exc})")
 
         for rank_index, (tracks, progression, plan, seed) in enumerate(
             ranked[:top_n], start=1

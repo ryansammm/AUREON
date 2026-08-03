@@ -51,6 +51,7 @@ class MelodicEngine:
         complexity: str = "medium",
         base_velocity: int = 92,
         allow_passing: bool = False,
+        motif: list = None,
     ) -> list:
         """Return a list of :class:`Note` for the whole progression.
 
@@ -63,6 +64,10 @@ class MelodicEngine:
             complexity: user ceiling — ``simple`` / ``medium`` / ``complex``.
             base_velocity: fallback base velocity when plan is ``None``.
             allow_passing: allow scale-step passing tones (lead role).
+            motif: optional scale-step contour (list of ints) from the LLM
+                ideation layer. When given it replaces the random motif so
+                the line carries a recognizable theme (re-anchored to each
+                bar's chord root, no periodic inversion).
         """
         role_range = self.config["role_ranges"][role]
         default_section = self.config.get("section_template", ["drop"])[0]
@@ -80,9 +85,14 @@ class MelodicEngine:
 
             patterns = self._patterns_for(role, complexity, density)
             rhythm = patterns[bar % 2] if len(patterns) > 1 else patterns[0]
-            invert = (bar % 4 == 2) and bar > 1
+            invert = (bar % 4 == 2) and bar > 1 and not motif
 
-            if motif_intervals is None or patterns[0] is not current_pattern:
+            if motif and motif_intervals is None:
+                motif_intervals = self._motif_to_intervals(
+                    motif, chord.root_pc, scale_pcs
+                )
+                current_pattern = patterns[0]
+            elif motif_intervals is None or patterns[0] is not current_pattern:
                 motif_intervals = self._build_motif_intervals(
                     chord, rhythm, role_range, scale_pcs, allow_passing
                 )
@@ -395,6 +405,26 @@ class MelodicEngine:
             onsets.append((onset, dur))
             onset += dur
         return onsets
+
+    def _motif_to_intervals(self, steps, root_pc, scale_pcs) -> list:
+        """Convert a scale-step contour into semitone offsets from the root.
+
+        Each step moves one scale tone up/down along the active scale,
+        so the motif stays in key while reading as a real melodic theme.
+        """
+        scale = sorted(scale_pcs)
+        if (root_pc % 12) not in scale:
+            return [0] * len(steps)
+        idx = scale.index(root_pc % 12)
+        intervals = []
+        for step in steps:
+            idx += int(step)
+            pc = scale[idx % len(scale)]
+            iv = (pc - root_pc) % 12
+            if iv > 6:
+                iv -= 12
+            intervals.append(iv)
+        return intervals
 
     def _interval_pool(self, chord, allow_passing=False):
         """Chord-tone intervals (0-24) relative to the root, weighted."""

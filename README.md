@@ -2,8 +2,12 @@
 
 Rule-based MIDI composition engine that generates genre-aware, multi-track
 music (bass, leads, arps, chords, pads, drums) with arrangement structure,
-humanized timing and MIDI export. 100% local and free/open-source — no cloud
-APIs.
+humanized timing and MIDI export. 100% local and free/open-source.
+
+Optional **AI layer (Phase 5)** — the engine can ask a free-tier LLM (Gemini
+→ Groq fallback) for creative ideas (progression + motif) and to re-score
+candidate rankings. No key = fully rule-based; nothing ever leaves your
+machine except the single prompt to the LLM you opt into.
 
 Generated MIDI opens in any DAW (Ableton, FL Studio, Logic, Cubase). A
 numpy-based WAV renderer is included so you can listen to results without
@@ -26,12 +30,18 @@ a synth or soundfont.
   ensemble score: theory heuristics (dissonance, repetition, voice leading) plus
   statistical features (tonality in-key rate, chord-tone alignment, pitch variety,
   density balance, register adherence).
+- **AI assistance (optional)** — Gemini/Groq `LLMIdeator` suggests a chord
+  progression + melodic motif (validated to the scale), and an `AIScorer`
+  re-ranks candidates with musical reasoning. Both composable with the
+  rule-based stack; provider chain falls back automatically.
 - **Humanization** — micro-timing, velocity arcs, and per-genre **swing/groove**.
 - **MIDI automation** — CC 74 (filter cutoff) + CC 11 (expression) follow the
   energy curve; percussion on channel 10; mid-song **tempo map**; section
   **modulations** (e.g. key lift on the second drop).
-- **Local web UI (English)** — generate, A/B-compare candidates, and listen
-  in the browser.
+- **God-tier web UI** — React + Vite + Tailwind SPA served by a small Flask
+  REST API: genre/role picker with live summary, animated generation overlay,
+  waveform player, interactive **piano roll** (pan/zoom/hover), candidate
+  **A/B audio compare** with AI reasoning.
 - **WAV render** — stereo synthesis with per-role panning, drum voices and
   reverb; plus a metrics report per track/section.
 
@@ -47,6 +57,14 @@ pip install -r requirements.txt
 
 Dependencies: `music21`, `mido`, `pytest`, `numpy` (for the WAV render),
 `flask` (for the web UI).
+
+The web UI additionally needs Node.js 18+ (only for building the SPA):
+
+```bash
+cd web\frontend
+npm install
+npm run build                  # outputs web/frontend/dist (optional if you use `npm run dev`)
+```
 
 ## CLI usage
 
@@ -72,6 +90,14 @@ python cli.py --genre dubstep --roles bass,lead,chord,drum --report
 
 # render exported MIDI to WAV (stereo + reverb)
 python cli.py --genre dubstep --role bass --render
+
+# Phase 5: let Gemini/Groq design the progression + motif
+python cli.py --genre dubstep --roles bass,lead,chord,drum --ai \
+    --prompt "dark, cinematic with an emotional lead"
+
+# Phase 5: AI also re-ranks the candidates (needs --candidates > 1)
+python cli.py --genre dubstep --roles bass,lead,chord,drum --candidates 5 \
+    --ai --ai-score --top 1
 ```
 
 Output goes to the current directory (or `--output path.mid`); samples are
@@ -89,18 +115,47 @@ and the humanizer's micro-timing.
 
 ## Web UI
 
+Flask is now a **REST JSON API** (`/api/config`, `/api/generate`, `/play`,
+`/download`) that also serves the built React SPA from `web/frontend/dist`.
+
 ```bash
+# 1. build the SPA once (after install)
+cd web\frontend && npm install && npm run build
+
+# 2. run the app (serves UI + API on the same port)
 python web\app.py
 # open http://127.0.0.1:8000
+```
+
+During development use the Vite dev server (hot reload) instead of the build —
+it proxies `/api` to Flask on port 8000:
+
+```bash
+# terminal 1                       # terminal 2
+python web\app.py                  cd web\frontend && npm run dev
 ```
 
 Binds to `127.0.0.1` only. Do not expose to a public network without adding
 authentication.
 
+## AI layer (optional, Phase 5)
+
+Copy `.env.example` → `.env` and add at least one key:
+
+| Provider | Model | Free tier | Where to get it |
+|----------|-------|-----------|-----------------|
+| Gemini | `gemini-2.5-flash` | ~1500 req/day | https://aistudio.google.com/app/apikey |
+| Groq | `llama-3.3-70b-versatile` | ~1000 req/day | https://console.groq.com/keys |
+
+Gemini is tried first; on failure the client falls back to Groq
+automatically. With no key the engine stays 100% rule-based. In the UI,
+flip the **AI assistance** toggle to send a vibe prompt and enable AI
+ideation + AI re-scoring of candidates.
+
 ## Tests
 
 ```bash
-python -m pytest -q     # 135 tests
+python -m pytest -q     # 141 tests
 ```
 
 ## Architecture
@@ -118,6 +173,9 @@ Layer-based pipeline (`engine/`), each layer independently testable:
 | 6 | `exporter.py` | Type-1 multi-track MIDI, CC, tempo map |
 | — | `pipeline.py` | wires 0→6; multi-role composition; CC/tempo/modulation |
 | — | `metrics.py` | per-track/section stats report |
+| — | `llm.py` | Gemini/Groq provider chain + JSON extraction (Phase 5) |
+| — | `ideation.py` | `LLMIdeator` — AI chord progression + motif, validated |
+| — | `ai_scorer.py` | `AIScorer` — AI re-ranking of candidates (Phase 5) |
 
 Genre configs live in `config/genres/*.json`. A genre is fully defined by
 config — no engine code changes needed.

@@ -1,0 +1,23 @@
+{
+  "name": "AUREON — AI Music Generator",
+  "short_name": "AUREON",
+  "description": "AI music generation studio: compose, listen with real GM instruments, mix stems, compare and export.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#14100a",
+  "theme_color": "#ff7a1a",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

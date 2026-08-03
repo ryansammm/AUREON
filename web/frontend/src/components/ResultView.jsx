@@ -1,7 +1,8 @@
-import { midiUrl, trackMidiUrl, wavUrl } from '../api'
+import { exportUrl, midiUrl, trackMidiUrl, wavUrl } from '../api'
 import { downloadProject } from '../history'
 import { roleColor, roleLabel } from '../roles'
 import WaveformPlayer from './WaveformPlayer'
+import LivePlayer from './LivePlayer'
 import PianoRoll from './PianoRoll'
 import Candidates from './Candidates'
 import MixerPlayer from './MixerPlayer'
@@ -42,6 +43,12 @@ export default function ResultView({ result, params, onNew }) {
             >
               💾 Save project
             </button>
+            <a
+              className="glass rounded-lg px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-[#ff7a1a]/60 hover:text-[#ffb25e]"
+              href={exportUrl(r.mid)}
+            >
+              ⬇ Export bundle (ZIP)
+            </a>
             <a
               className="glass rounded-lg px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-[#ff7a1a]/60 hover:text-[#ffb25e]"
               href={wavUrl(r.wav)}
@@ -131,6 +138,8 @@ export default function ResultView({ result, params, onNew }) {
         </div>
         <WaveformPlayer file={r.wav} accent="#ff7a1a" height={110} autoLabel="Master · WAV" />
       </div>
+
+      <LivePlayer mid={r.mid} roles={r.tracks.map((t) => t.role)} />
 
       {/* ─── Stem mixer ─── */}
       {r.stems?.length > 0 && (

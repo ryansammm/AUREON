@@ -18,10 +18,13 @@ http://127.0.0.1:8000
 
 import io
 import json
+import os
 import queue
+import re
 import sys
 import threading
 import uuid
+import zipfile
 from pathlib import Path
 
 from flask import Flask, Response, jsonify, request, send_from_directory
@@ -73,8 +76,23 @@ def _render_wav(mid_path: Path, wav_path: Path, gains: dict,
                 roles: list = None, reverb: bool = True) -> None:
     from render_audio import render_to_wav
 
+    # Prefer the SoundFont renderer (real GM instruments) when available;
+    # it still runs the numpy master chain, and falls back to the synth.
+    try:
+        import sf_render
+
+        if sf_render.soundfont_available():
+            seconds = sf_render.render_midi_with_soundfont(
+                mid_path, wav_path, gain=1.0, roles=roles,
+                master=roles is None,
+            )
+            if seconds is not None:
+                return
+    except Exception:  # noqa: BLE001 - never break generation on render issues
+        pass
+
     render_to_wav(mid_path, wav_path, gain=0.55, gains=gains, reverb=reverb,
-                  roles=roles)
+                  roles=roles, master=roles is None)
 
 
 def _serialize_notes(track) -> list:
@@ -359,14 +377,27 @@ def api_generate():
         return jsonify({"error": str(exc)}), 400
 
 
+MAX_GENERATION_SECONDS = 300.0
+
+
 @app.route("/api/generate/stream", methods=["POST"])
 def api_generate_stream():
     """SSE variant: pushes ``step`` events (message + pct), then ``result``."""
     data = request.get_json(silent=True) or {}
     events = queue.Queue()
 
+    def on_timeout():
+        # Client must never wait forever: force the stream closed even if the
+        # worker thread is still stuck inside a subprocess / render loop.
+        events.put(("error", {"error": "generation timed out"}))
+        events.put(("__end__", None))
+
+    watchdog = threading.Timer(MAX_GENERATION_SECONDS, on_timeout)
+    watchdog.daemon = True
+
     def worker():
         try:
+            watchdog.start()
             result = _generate_payload(
                 data, report=lambda m, p: events.put(("step", {"message": m,
                                                                "pct": p}))
@@ -375,6 +406,7 @@ def api_generate_stream():
         except Exception as exc:  # noqa: BLE001 - surface as SSE error
             events.put(("error", {"error": str(exc)}))
         finally:
+            watchdog.cancel()
             events.put(("__end__", None))
 
     threading.Thread(target=worker, daemon=True).start()
@@ -393,6 +425,106 @@ def api_generate_stream():
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",
             "Connection": "keep-alive",
+        },
+    )
+
+
+def parse_base_name(base_name: str) -> dict:
+    """Parse ``run{id}_{genre}_{roles}_{key}{mode}_seed{n}`` into metadata."""
+    parts = base_name.split("_")
+    meta = {
+        "run_id": parts[0] if parts else base_name,
+        "genre": parts[1] if len(parts) > 1 else "",
+        "roles": parts[2].split("-") if len(parts) > 2 else [],
+    }
+    keymode = parts[3] if len(parts) > 3 else ""
+    if keymode.endswith("minor"):
+        meta["mode"], meta["key"] = "minor", keymode[:-5]
+    elif keymode.endswith("major"):
+        meta["mode"], meta["key"] = "major", keymode[:-5]
+    else:
+        meta["mode"], meta["key"] = "", keymode
+    if len(parts) > 4 and parts[4].startswith("seed"):
+        try:
+            meta["seed"] = int(parts[4][4:])
+        except ValueError:
+            pass
+    return meta
+
+
+@app.route("/api/export/<path:filename>")
+def export_bundle(filename):
+    """Download a ZIP bundle: master WAV, per-role stem WAVs + MIDIs,
+    candidate renders, project.json and a README, ready to drop in a DAW."""
+    src = app.config["OUTPUT_DIR"] / filename
+    if not src.is_file() or not src.name.endswith(".mid"):
+        return jsonify({"error": "not found"}), 404
+    base = Path(filename).stem
+    meta = parse_base_name(base)
+    run_id = meta["run_id"]
+    matches = list(app.config["OUTPUT_DIR"].glob(f"{run_id}_*"))
+    if not matches:
+        return jsonify({"error": "no files for this run"}), 404
+
+    from sf_render import filter_midi_roles
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("project.json", json.dumps(meta, indent=2) + "\n")
+        readme = (
+            f"AUREON project: {meta.get('genre', '')} "
+            f"{meta.get('key', '')} {meta.get('mode', '')} "
+            f"seed {meta.get('seed', '')}\n"
+            f"Roles: {', '.join(meta.get('roles', []))}\n\n"
+            f"Files:\n"
+            f"  MIDI/run_main.mid        full composition\n"
+            f"  MIDI/stem_<role>.mid      single-role MIDI (GM program change)\n"
+            f"  MIDI/candidate_<n>.mid    ranked candidate ideas\n"
+            f"  Audio/run_master.wav      mastered full mix\n"
+            f"  Audio/stem_<role>.wav     dry stem per role\n"
+            f"  Audio/candidate_<n>.wav   candidate previews\n"
+            f"  project.json              generation metadata\n\n"
+            f"Drums live on MIDI channel 10; every track carries a GM "
+            f"Program Change so a DAW auto-loads the right instrument.\n"
+        )
+        z.writestr("README.txt", readme)
+
+        seen = set()
+        for f in sorted(matches, key=lambda p: p.name):
+            if f.name in seen or f.suffix not in (".mid", ".wav"):
+                continue
+            seen.add(f.name)
+            name = f.name[len(run_id):]
+            if "_stem_" in name:
+                role = name.split("_stem_", 1)[1]
+                if f.suffix == ".mid":
+                    z.write(str(f), f"MIDI/stem_{role[:-4]}.mid")
+                else:
+                    z.write(str(f), f"Audio/stem_{role}")
+            elif re.search(r"_c\d+_", name):
+                rank = name.split("_c")[1].split("_")[0]
+                folder = "Audio" if f.suffix == ".wav" else "MIDI"
+                z.write(str(f), f"{folder}/candidate_{rank}{f.suffix}")
+            elif f.suffix == ".mid":
+                z.write(str(f), "MIDI/run_main.mid")
+            else:
+                z.write(str(f), "Audio/run_master.wav")
+
+        for role in meta.get("roles", []):
+            try:
+                filtered = filter_midi_roles(src, [role])
+                out = io.BytesIO()
+                filtered.save(file=out)
+                z.writestr(f"MIDI/stem_{role}.mid", out.getvalue())
+            except Exception:  # noqa: BLE001 - best-effort extra files
+                continue
+
+    buf.seek(0)
+    return Response(
+        buf,
+        mimetype="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="{base}_bundle.zip"'
         },
     )
 

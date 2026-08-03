@@ -139,6 +139,7 @@ Flask is now a **REST JSON API** that also serves the built React SPA from
 | `POST /api/generate/stream` | same, but streams SSE progress (`step`/`result`/`error`) |
 | `GET  /api/track/<file>?role=` | download a single-role MIDI stem (omit `role` = main MIDI) |
 | `POST /api/import/midi` | upload `.mid` → GM-mapped channel report (multipart `file`) |
+| `GET  /api/export/<file>` | **ZIP bundle**: master + stems + candidates (MIDI & WAV), project.json, README |
 | `GET  /play/<file>` | stream a rendered WAV |
 | `GET  /download/<file>` | download a MIDI/WAV file |
 
@@ -162,6 +163,37 @@ python web\app.py                  cd web\frontend && npm run dev
 Binds to `127.0.0.1` only. Do not expose to a public network without adding
 authentication.
 
+### Audio rendering & mastering
+
+The master WAV is rendered with a **real General MIDI SoundFont** (FluidSynth +
+GeneralUser GS, from `D:\DevTools`) when available, with a numpy piano-synth
+fallback. Full mixes go through a **master chain** (kick sidechain-duck →
+glue compression → saturation → limiter); stems are dry + normalized so the
+browser mixer stays clean. Env overrides: `AUREON_FLUIDSYNTH`,
+`AUREON_SOUNDFONT` (set `AUREON_SOUNDFONT=0` to force the numpy renderer).
+
+### PWA & browser playback
+
+The SPA is installable (manifest + icons + service worker, offline shell) and
+plays compositions **in the browser** with real GM instruments via Tone.js +
+SoundFont-player (lazy-loaded; drums on channel 10, PolySynth fallback).
+
+### Dev server control (no more stuck ports / stale processes)
+
+```powershell
+scripts\dev.ps1 -Status     # is the server up? orphans?
+scripts\dev.ps1 -Restart    # kill all instances + orphan fluidsynth, rebuild, start
+scripts\dev.ps1 -Stop       # stop everything
+scripts\dev.ps1 -Logs       # tail server logs
+```
+
+End-to-end smoke check (never hangs — every socket has a timeout and the SSE
+stream is watchdog-bounded):
+
+```bash
+python tools\smoke_test.py
+```
+
 ## AI layer (optional, Phase 5)
 
 Copy `.env.example` → `.env` and add at least one key:
@@ -179,7 +211,7 @@ ideation + AI re-scoring of candidates.
 ## Tests
 
 ```bash
-python -m pytest -q     # 146 tests
+python -m pytest -q     # 161 tests; --timeout=120 is always on via pytest.ini
 ```
 
 ## Architecture
@@ -201,6 +233,8 @@ Layer-based pipeline (`engine/`), each layer independently testable:
 | — | `ideation.py` | `LLMIdeator` — AI chord progression + motif, validated |
 | — | `ai_scorer.py` | `AIScorer` — AI re-ranking of candidates (Phase 5) |
 | — | `gm_map.py` (`tools/`) | GM patch/drum maps + MIDI Program Change parser → internal role/preset mapping |
+| — | `sf_render.py` (`tools/`) | optional FluidSynth + GM SoundFont renderer (`render_midi_with_soundfont`, `filter_midi_roles`) |
+| — | `render_audio.py` (`tools/`) | stereo WAV render + **master chain** (`apply_master_chain`, `normalize_stem`) |
 
 Genre configs live in `config/genres/*.json`. A genre is fully defined by
 config — no engine code changes needed.

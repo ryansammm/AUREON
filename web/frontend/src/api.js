@@ -66,6 +66,7 @@ export async function streamGenerate(body, { onStep, onResult, onError } = {}) {
 export const wavUrl = (file) => `/play/${file}`
 export const midiUrl = (file) => `/download/${file}`
 export const trackMidiUrl = (mid, role) => `/api/track/${mid}?role=${role}`
+export const exportUrl = (mid) => `/api/export/${mid}`
 
 export async function importMidi(file) {
   const fd = new FormData()

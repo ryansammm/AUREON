@@ -5,6 +5,10 @@ a piano voice** (drums keep their kit timbre), the mix is stereo with
 per-role panning, a reverb bus and a soft limiter. Instrument identity is
 kept in the MIDI (GM Program Change + track names), not in the preview audio.
 
+The full master render adds a **master chain**: sidechain ducking of the
+melodic/bass bus on every kick hit, a glue compressor, gentle saturation and
+a final limiter, so the mix sounds "radio-ready". Stems stay dry/unmastered.
+
 Usage:
     python tools\\render_audio.py output\\dubstep_full_top5.mid
     python tools\\render_audio.py output\\dubstep_full_top5.mid --gain 0.6 --no-reverb
@@ -207,6 +211,94 @@ def make_reverb_ir(seconds: float = 1.2, decay: float = 4.5) -> np.ndarray:
 
 
 # --------------------------------------------------------------------------- #
+# Master chain
+# --------------------------------------------------------------------------- #
+def kick_duck_envelope(
+    kick_times: list,
+    n: int,
+    sample_rate: int = SAMPLE_RATE,
+    reduction: float = 0.35,
+    release: float = 0.16,
+    attack: float = 0.004,
+) -> np.ndarray:
+    """Gain envelope that dips after every kick onset (exp decay, attack
+    smoothed). Applied to the melodic/bass bus so the kick cuts through."""
+    env = np.zeros(n)
+    if not kick_times:
+        return np.ones(n)
+    t = np.arange(n) / sample_rate
+    rel_samples = int(release * sample_rate)
+    for kt in kick_times:
+        i0 = int(kt * sample_rate)
+        if i0 >= n:
+            continue
+        end = min(i0 + rel_samples, n)
+        seg = np.exp(-(t[i0:end] - kt) / release)
+        np.maximum(env[i0:end], seg, out=env[i0:end])
+    gain = 1.0 - reduction * env
+    k = max(1, int(attack * sample_rate))
+    return np.convolve(gain, np.ones(k) / k, mode="same")
+
+
+def glue_compress(
+    l: np.ndarray,
+    r: np.ndarray,
+    sample_rate: int = SAMPLE_RATE,
+    threshold: float = 0.45,
+    ratio: float = 3.0,
+    makeup: float = 1.05,
+) -> tuple:
+    """Feed-forward glue compressor: RMS sidechain, soft knee gain, ~2ms gain
+    smoothing. Fully vectorized (no sample loops)."""
+    n = len(l)
+    if n == 0:
+        return l, r
+    side = np.maximum(np.abs(l), np.abs(r))
+    window = max(1, int(0.010 * sample_rate))
+    sq = side ** 2
+    c = np.cumsum(np.insert(sq, 0, 0.0))
+    rms = np.sqrt((c[window:] - c[:-window]) / window)
+    rms = np.concatenate([np.full(window - 1, rms[0]), rms])
+    over = rms > threshold
+    gain = np.ones(n)
+    gain[over] = (threshold + (rms[over] - threshold) / ratio) / np.maximum(
+        rms[over], 1e-9
+    )
+    k = max(1, int(0.002 * sample_rate))
+    smooth = np.convolve(gain, np.ones(k) / k, mode="same")
+    return l * smooth * makeup, r * smooth * makeup
+
+
+def apply_master_chain(
+    l: np.ndarray,
+    r: np.ndarray,
+    sample_rate: int = SAMPLE_RATE,
+) -> tuple:
+    """Master bus: DC/hiss cleanup, glue compressor, warm saturation, limiter."""
+    l = l - l.mean()
+    r = r - r.mean()
+    l, r = glue_compress(l, r, sample_rate)
+    l = np.tanh(l * 1.25)
+    r = np.tanh(r * 1.25)
+    peak = max(np.max(np.abs(l)), np.max(np.abs(r))) or 1.0
+    l = l / peak * 0.92
+    r = r / peak * 0.92
+    return l, r
+
+
+def normalize_stem(l: np.ndarray, r: np.ndarray) -> tuple:
+    """Level a dry stem the same way across render backends (peak 0.95)."""
+    mono = (l + r) / 2.0
+    peak = np.max(np.abs(mono)) or 1.0
+    l = l / peak * 0.9
+    r = r / peak * 0.9
+    l = np.tanh(l * 1.25)
+    r = np.tanh(r * 1.25)
+    peak = max(np.max(np.abs(l)), np.max(np.abs(r))) or 1.0
+    return l / peak * 0.95, r / peak * 0.95
+
+
+# --------------------------------------------------------------------------- #
 # Render
 # --------------------------------------------------------------------------- #
 def render_to_wav(
@@ -216,6 +308,7 @@ def render_to_wav(
     gains: dict = None,
     reverb: bool = True,
     roles: list = None,
+    master: bool = True,
 ) -> float:
     """Render a .mid to a stereo .wav.
 
@@ -226,6 +319,8 @@ def render_to_wav(
         gains: per-role gain overrides.
         reverb: add the shared reverb bus (dry for stems).
         roles: if given, only these roles are rendered (stem export).
+        master: apply the full master chain (sidechain duck + glue + limiter).
+                Disabled for stem renders so the mixer stays dry.
     """
     mid = MidiFile(str(mid_path))
     tempo = 500000
@@ -251,16 +346,22 @@ def render_to_wav(
         raise SystemExit(f"no notes found in {mid_path}")
 
     end_time += 1.0
-    buf_l = np.zeros(int(end_time * SAMPLE_RATE) + 1)
-    buf_r = np.zeros(int(end_time * SAMPLE_RATE) + 1)
-    wet = np.zeros_like(buf_l)
+    length = int(end_time * SAMPLE_RATE) + 1
+    mel_l = np.zeros(length)
+    mel_r = np.zeros(length)
+    mel_wet = np.zeros(length)
+    drm_l = np.zeros(length)
+    drm_r = np.zeros(length)
+    drm_wet = np.zeros(length)
+    kick_times = []
 
     gains = {**ROLE_GAIN, **(gains or {})}
+    is_drum = ("drum", "drum_layers")
     for start, dur, pitch, freq, vel, role in note_plans:
         t0 = int(start * SAMPLE_RATE)
         n = max(int(dur * SAMPLE_RATE), 1)
         t = np.arange(n) / SAMPLE_RATE
-        if role in ("drum", "drum_layers"):
+        if role in is_drum:
             sig = drum_waveform(pitch, t)
             pan = DRUM_PAN.get(pitch, 0.0)
             amp = (vel / 127) ** 0.7 * gains.get(role, 0.78) * gain
@@ -275,27 +376,42 @@ def render_to_wav(
             env = envelope(t, dur, False)
         gl, gr = pan_gains(pan)
         seg = sig * env * amp
-        buf_l[t0:t0 + n] += seg * gl
-        buf_r[t0:t0 + n] += seg * gr
-        if reverb:
-            wet[t0:t0 + n] += seg * 0.5
+        if role in is_drum:
+            drm_l[t0:t0 + n] += seg * gl
+            drm_r[t0:t0 + n] += seg * gr
+            if reverb:
+                drm_wet[t0:t0 + n] += seg * 0.5
+            if pitch in (35, 36):
+                kick_times.append(start)
+        else:
+            mel_l[t0:t0 + n] += seg * gl
+            mel_r[t0:t0 + n] += seg * gr
+            if reverb:
+                mel_wet[t0:t0 + n] += seg * 0.5
 
     if reverb:
         ir = make_reverb_ir()
-        rev = fft_convolve(wet, ir)
-        n_out = min(len(buf_l), len(rev))
-        buf_l[:n_out] += rev[:n_out] * 0.22
-        buf_r[:n_out] += rev[:n_out] * 0.22
+        rev = fft_convolve(mel_wet, ir)
+        n_out = min(len(mel_l), len(rev))
+        mel_l[:n_out] += rev[:n_out] * 0.22
+        mel_r[:n_out] += rev[:n_out] * 0.22
+        rev = fft_convolve(drm_wet, ir)
+        n_out = min(len(drm_l), len(rev))
+        drm_l[:n_out] += rev[:n_out] * 0.22
+        drm_r[:n_out] += rev[:n_out] * 0.22
 
-    mono = (buf_l + buf_r) / 2.0
-    peak = np.max(np.abs(mono)) or 1.0
-    buf_l = buf_l / peak * 0.9
-    buf_r = buf_r / peak * 0.9
-    buf_l = np.tanh(buf_l * 1.25)
-    buf_r = np.tanh(buf_r * 1.25)
-    peak = max(np.max(np.abs(buf_l)), np.max(np.abs(buf_r))) or 1.0
-    buf_l = buf_l / peak * 0.95
-    buf_r = buf_r / peak * 0.95
+    if master and kick_times:
+        duck = kick_duck_envelope(kick_times, len(mel_l), SAMPLE_RATE)
+        mel_l *= duck
+        mel_r *= duck
+
+    buf_l = mel_l + drm_l
+    buf_r = mel_r + drm_r
+
+    if master:
+        buf_l, buf_r = apply_master_chain(buf_l, buf_r, SAMPLE_RATE)
+    else:
+        buf_l, buf_r = normalize_stem(buf_l, buf_r)
 
     frames = np.empty(2 * len(buf_l), dtype=np.int16)
     frames[0::2] = (np.clip(buf_l, -1.0, 1.0) * 32767).astype(np.int16)
@@ -310,7 +426,8 @@ def render_to_wav(
     seconds = len(frames) // 2 / SAMPLE_RATE
     print(
         f"rendered {mid_path.name}: {len(note_plans)} notes, "
-        f"{seconds:.1f}s (stereo{' + reverb' if reverb else ''}) -> {out_path.name}"
+        f"{seconds:.1f}s (stereo{' + reverb' if reverb else ''}"
+        f"{' + master chain' if master else ''}) -> {out_path.name}"
     )
     return seconds
 

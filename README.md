@@ -39,9 +39,19 @@ a synth or soundfont.
   energy curve; percussion on channel 10; mid-song **tempo map**; section
   **modulations** (e.g. key lift on the second drop).
 - **God-tier web UI** — React + Vite + Tailwind SPA served by a small Flask
-  REST API: genre/role picker with live summary, animated generation overlay,
-  waveform player, interactive **piano roll** (pan/zoom/hover), candidate
-  **A/B audio compare** with AI reasoning.
+  REST API: genre/role picker with live summary, real-time **SSE generation
+  progress**, waveform player, interactive **piano roll** (pan/zoom/hover),
+  candidate **A/B audio compare** with AI reasoning.
+- **Per-track stems & mixer** — stereo WAV stems per role plus a browser
+  **mixer** (volume / mute / solo per stem); **per-track MIDI download**
+  (`/api/track/<file>?role=...`).
+- **History & compare** — every generation is saved locally (localStorage);
+  open old compositions, or **compare two** side by side with differences
+  highlighted. Projects can be **saved/loaded as JSON**.
+- **GM MIDI import** — upload a `.mid` and AUREON reads Program Change +
+  channel (channel 10 = drums) and auto-assigns internal role/presets from
+  the **General MIDI patch & drum maps**, with manual per-track override and
+  non-GM-compliance warnings.
 - **WAV render** — stereo synthesis with per-role panning, drum voices and
   reverb; plus a metrics report per track/section.
 
@@ -71,6 +81,7 @@ npm run build                  # outputs web/frontend/dist (optional if you use 
 ```bash
 # single track
 python cli.py --genre dubstep --role bass --key a --mode minor --bpm 140
+```
 
 ```bash
 # multi-track composition with drums, ranked from 5 candidates
@@ -115,8 +126,18 @@ and the humanizer's micro-timing.
 
 ## Web UI
 
-Flask is now a **REST JSON API** (`/api/config`, `/api/generate`, `/play`,
-`/download`) that also serves the built React SPA from `web/frontend/dist`.
+Flask is now a **REST JSON API** that also serves the built React SPA from
+`web/frontend/dist`:
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET  /api/config` | genres + defaults, roles, gain defaults |
+| `POST /api/generate` | generate + rank a composition (JSON body) |
+| `POST /api/generate/stream` | same, but streams SSE progress (`step`/`result`/`error`) |
+| `GET  /api/track/<file>?role=` | download a single-role MIDI stem (omit `role` = main MIDI) |
+| `POST /api/import/midi` | upload `.mid` → GM-mapped channel report (multipart `file`) |
+| `GET  /play/<file>` | stream a rendered WAV |
+| `GET  /download/<file>` | download a MIDI/WAV file |
 
 ```bash
 # 1. build the SPA once (after install)
@@ -155,7 +176,7 @@ ideation + AI re-scoring of candidates.
 ## Tests
 
 ```bash
-python -m pytest -q     # 141 tests
+python -m pytest -q     # 146 tests
 ```
 
 ## Architecture
@@ -176,6 +197,7 @@ Layer-based pipeline (`engine/`), each layer independently testable:
 | — | `llm.py` | Gemini/Groq provider chain + JSON extraction (Phase 5) |
 | — | `ideation.py` | `LLMIdeator` — AI chord progression + motif, validated |
 | — | `ai_scorer.py` | `AIScorer` — AI re-ranking of candidates (Phase 5) |
+| — | `gm_map.py` (`tools/`) | GM patch/drum maps + MIDI Program Change parser → internal role/preset mapping |
 
 Genre configs live in `config/genres/*.json`. A genre is fully defined by
 config — no engine code changes needed.

@@ -368,16 +368,34 @@ def api_config():
     })
 
 
+MAX_GENERATION_SECONDS = 300.0
+
+
 @app.route("/api/generate", methods=["POST"])
 def api_generate():
     data = request.get_json(silent=True) or {}
-    try:
-        return jsonify(_generate_payload(data))
-    except ValueError as exc:
-        return jsonify({"error": str(exc)}), 400
+    result = {}
 
+    def run():
+        try:
+            result["ok"] = _generate_payload(data)
+        except ValueError as exc:
+            result["bad_request"] = str(exc)
+        except Exception as exc:  # noqa: BLE001 - surface as 500
+            result["error"] = str(exc)
 
-MAX_GENERATION_SECONDS = 300.0
+    # Bounded worker: even if rendering wedges, the client gets a 504 instead
+    # of waiting forever (the daemon thread is left to clean up on its own).
+    thread = threading.Thread(target=run, daemon=True)
+    thread.start()
+    thread.join(MAX_GENERATION_SECONDS)
+    if thread.is_alive():
+        return jsonify({"error": "generation timed out"}), 504
+    if "bad_request" in result:
+        return jsonify({"error": result["bad_request"]}), 400
+    if "error" in result:
+        return jsonify({"error": result["error"]}), 500
+    return jsonify(result["ok"])
 
 
 @app.route("/api/generate/stream", methods=["POST"])
@@ -452,12 +470,24 @@ def parse_base_name(base_name: str) -> dict:
     return meta
 
 
+def _safe_output_file(filename: str) -> Path | None:
+    """Resolve ``filename`` and return it only if it stays inside OUTPUT_DIR."""
+    try:
+        candidate = (app.config["OUTPUT_DIR"] / filename).resolve()
+    except Exception:  # noqa: BLE001 - malformed path
+        return None
+    root = app.config["OUTPUT_DIR"].resolve()
+    if candidate != root and root not in candidate.parents:
+        return None
+    return candidate if candidate.is_file() else None
+
+
 @app.route("/api/export/<path:filename>")
 def export_bundle(filename):
     """Download a ZIP bundle: master WAV, per-role stem WAVs + MIDIs,
     candidate renders, project.json and a README, ready to drop in a DAW."""
-    src = app.config["OUTPUT_DIR"] / filename
-    if not src.is_file() or not src.name.endswith(".mid"):
+    src = _safe_output_file(filename)
+    if src is None or not src.name.endswith(".mid"):
         return jsonify({"error": "not found"}), 404
     base = Path(filename).stem
     meta = parse_base_name(base)
@@ -532,8 +562,8 @@ def export_bundle(filename):
 @app.route("/api/track/<path:filename>")
 def track_midi(filename):
     """Download the main MIDI, or a single-role stem when ``?role=...``."""
-    src = app.config["OUTPUT_DIR"] / filename
-    if not src.is_file():
+    src = _safe_output_file(filename)
+    if src is None:
         return jsonify({"error": "not found"}), 404
     role = (request.args.get("role") or "").strip()
     if not role:

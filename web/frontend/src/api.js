@@ -1,11 +1,44 @@
+const DEFAULT_TIMEOUT_MS = 120000
+
+export class TimeoutError extends Error {
+  constructor(ms) {
+    super(`Request timed out after ${Math.round(ms / 1000)}s`)
+    this.name = 'TimeoutError'
+  }
+}
+
+// Every request is bounded so a stalled backend can never leave the UI
+// hanging forever. Works in all modern browsers via AbortController.
+export async function fetchWithTimeout(url, options = {}, ms = DEFAULT_TIMEOUT_MS) {
+  const controller = new AbortController()
+  let timedOut = false
+  const timer = setTimeout(() => {
+    timedOut = true
+    controller.abort()
+  }, ms)
+  const prev = options.signal
+  if (prev) {
+    if (prev.aborted) controller.abort()
+    else prev.addEventListener('abort', () => controller.abort(), { once: true })
+  }
+  try {
+    return await fetch(url, { ...options, signal: controller.signal })
+  } catch (e) {
+    if (timedOut) throw new TimeoutError(ms)
+    throw e
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 export async function fetchConfig() {
-  const r = await fetch('/api/config')
+  const r = await fetchWithTimeout('/api/config')
   if (!r.ok) throw new Error('Failed to load config')
   return r.json()
 }
 
 export async function generateComposition(body) {
-  const r = await fetch('/api/generate', {
+  const r = await fetchWithTimeout('/api/generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -15,12 +48,20 @@ export async function generateComposition(body) {
   return data
 }
 
-export async function streamGenerate(body, { onStep, onResult, onError } = {}) {
-  const r = await fetch('/api/generate/stream', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
+// Server watchdog closes the stream at 300s; give the client a little more.
+const STREAM_TIMEOUT_MS = 360000
+
+export async function streamGenerate(body, { onStep, onResult, onError, signal } = {}) {
+  const r = await fetchWithTimeout(
+    '/api/generate/stream',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal,
+    },
+    STREAM_TIMEOUT_MS,
+  )
   if (!r.ok || !r.body) {
     let msg = `HTTP ${r.status}`
     try {
@@ -71,7 +112,7 @@ export const exportUrl = (mid) => `/api/export/${mid}`
 export async function importMidi(file) {
   const fd = new FormData()
   fd.append('file', file)
-  const r = await fetch('/api/import/midi', { method: 'POST', body: fd })
+  const r = await fetchWithTimeout('/api/import/midi', { method: 'POST', body: fd })
   const data = await r.json()
   if (!r.ok) throw new Error(data.error || 'MIDI import failed')
   return data

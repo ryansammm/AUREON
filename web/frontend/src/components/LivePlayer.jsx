@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { parseMidi } from 'midi-file'
-import { trackMidiUrl } from '../api'
+import { trackMidiUrl, fetchWithTimeout } from '../api'
 import { roleLabel } from '../roles'
 
 // MusyngKite (gleitz) GM names per AUREON role — real instrument timbres.
@@ -121,6 +121,7 @@ export default function LivePlayer({ mid, roles = [] }) {
   const [loading, setLoading] = useState(false)
   const [engine, setEngine] = useState('')
   const stateRef = useRef({})
+  const toneRef = useRef(null)
 
   async function play() {
     if (playing || loading) return
@@ -135,6 +136,7 @@ export default function LivePlayer({ mid, roles = [] }) {
       ])
       const Tone = toneNs.default || toneNs
       const Soundfont = sfModule.default || sfModule
+      toneRef.current = Tone
 
       await Tone.start()
       Tone.getTransport().cancel()
@@ -164,7 +166,7 @@ export default function LivePlayer({ mid, roles = [] }) {
       const plan = []
       for (const role of roles) {
         try {
-          const res = await fetch(trackMidiUrl(mid, role))
+          const res = await fetchWithTimeout(trackMidiUrl(mid, role), {}, 60000)
           if (!res.ok) continue
           const buf = await res.arrayBuffer()
           const notes = parseRoleNotes(buf)
@@ -217,8 +219,18 @@ export default function LivePlayer({ mid, roles = [] }) {
   }
 
   function stop() {
-    Tone.getTransport().cancel()
-    Tone.getTransport().stop()
+    const Tone = toneRef.current
+    if (!Tone) {
+      setPlaying(false)
+      setLoading(false)
+      return
+    }
+    try {
+      Tone.getTransport().cancel()
+      Tone.getTransport().stop()
+    } catch {
+      /* ignore */
+    }
     const { instruments, fallbackSynth, synths } = stateRef.current
     stateRef.current = {}
     Object.values(instruments || {}).forEach((inst) => {
@@ -241,6 +253,7 @@ export default function LivePlayer({ mid, roles = [] }) {
       }
     }
     setPlaying(false)
+    setLoading(false)
   }
 
   const toggle = () => (playing ? stop() : play())

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { wavUrl } from '../api'
+import { wavUrl, fetchWithTimeout } from '../api'
 
 function computePeaks(data, count) {
   const block = Math.floor(data.length / count)
@@ -91,7 +91,7 @@ export default function WaveformPlayer({ file, accent = '#ff7a1a', height = 96, 
 
     ;(async () => {
       try {
-        const res = await fetch(src)
+        const res = await fetchWithTimeout(src, {}, 120000)
         const buf = await res.arrayBuffer()
         const Ctx = window.AudioContext || window.webkitAudioContext
         const ctx = new Ctx()

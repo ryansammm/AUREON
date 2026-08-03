@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { wavUrl } from '../api'
+import { wavUrl, fetchWithTimeout } from '../api'
 import { roleColor, roleLabel } from '../roles'
 
 export default function MixerPlayer({ stems }) {
@@ -53,7 +53,7 @@ export default function MixerPlayer({ stems }) {
     buffersRef.current = []
     Promise.all(
       stems.map(async (s) => {
-        const res = await fetch(wavUrl(s.wav))
+        const res = await fetchWithTimeout(wavUrl(s.wav), {}, 120000)
         const raw = await res.arrayBuffer()
         const buffer = await ac.decodeAudioData(raw)
         return { role: s.role, buffer }

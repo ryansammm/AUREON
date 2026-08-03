@@ -38,7 +38,7 @@ def build_parser() -> argparse.ArgumentParser:
                         help="key mode (default from config)")
     parser.add_argument("--bpm", type=int, default=None, help="tempo (default from config)")
     parser.add_argument("--bars", type=int, default=None,
-                        help="number of bars (default: full section template)")
+                        help="number of bars, max 280 (~5 min) (default: full section template)")
     parser.add_argument("--complexity", choices=["simple", "medium", "complex"],
                         default="medium", help="rhythmic complexity")
     parser.add_argument("--candidates", type=int, default=3,

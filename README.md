@@ -19,7 +19,9 @@ a synth or soundfont.
   `bass`, `sub_bass`, `lead`, `counter_lead`, `arp`, `stab`, `chord`/`pad`,
   `drum` and `drum_layers` roles with register separation.
 - **Arrangement & energy curve** — intro / buildup / breakdown / drop / outro
-  with per-section density, register, velocity and tempo.
+  with per-section density, register, velocity and tempo; long requests
+  (up to ~280 bars / ~5 min) expand into repeated build-up/drop loops with
+  a single intro and outro instead of blindly re-tiling the template.
 - **Layer 4 candidate selection** — generates N variations and ranks them with
   music-theory heuristics (dissonance, repetition, voice leading).
 - **Humanization** — micro-timing, velocity arcs, and per-genre **swing/groove**.
@@ -50,11 +52,15 @@ Dependencies: `music21`, `mido`, `pytest`, `numpy` (for the WAV render),
 # single track
 python cli.py --genre dubstep --role bass --key a --mode minor --bpm 140
 
+```bash
 # multi-track composition with drums, ranked from 5 candidates
 python cli.py --genre house --roles bass,lead,chord,drum --candidates 5 --top 1
 
 # full 10-role composition
 python cli.py --genre dubstep --roles bass,sub_bass,lead,arp,stab,counter_lead,chord,pad,drum,drum_layers
+
+# long-form composition (~5 min at 140 BPM)
+python cli.py --genre dubstep --roles bass,lead,chord,drum --bars 180
 
 # disable humanization for A/B comparison
 python cli.py --genre dubstep --role bass --no-humanize

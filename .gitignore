@@ -19,3 +19,6 @@ tests/
 # Generated output — keep only the (empty) folder itself
 output/*
 !output/.gitkeep
+
+# Internal progress logs — never pushed
+logs/

@@ -35,6 +35,16 @@ def available_genres() -> list:
     return sorted(p.stem for p in CONFIG_DIR.glob("*.json"))
 
 
+def genre_default_bpm() -> dict:
+    out = {}
+    for genre in available_genres():
+        try:
+            out[genre] = load_genre_config(genre)["default_bpm"]
+        except Exception:
+            continue
+    return out
+
+
 def _render_wav(mid_path: Path, wav_path: Path, gains: dict) -> None:
     from render_audio import render_to_wav
 
@@ -103,6 +113,7 @@ def index():
         roles=["bass", "lead", "chord", "pad", "arp", "stab", "sub_bass",
                "counter_lead", "drum", "drum_layers"],
         defaults=request.args,
+        genre_bpm=genre_default_bpm(),
     )
 
 

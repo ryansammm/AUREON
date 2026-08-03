@@ -16,5 +16,6 @@ tests/
 .env
 .DS_Store
 
-# Large generated audio (keep .mid samples, drop wavs)
-output/*.wav
+# Generated output — keep only the (empty) folder itself
+output/*
+!output/.gitkeep

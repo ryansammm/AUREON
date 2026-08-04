@@ -126,6 +126,24 @@ def _validate_sections(config: dict) -> None:
             raise ValueError(f"selector_weights['{name}'] must be positive")
 
 
+def _validate_groove(config: dict) -> None:
+    """Validate optional groove_profile and groove_strength keys."""
+    profile = config.get("groove_profile")
+    if profile is not None:
+        if not isinstance(profile, str):
+            raise ValueError("groove_profile must be a string (profile id)")
+        groove_dir = Path(__file__).resolve().parent.parent / "config" / "grooves"
+        path = groove_dir / f"{profile}.json"
+        if not path.is_file():
+            raise ValueError(
+                f"groove_profile '{profile}' references missing file: {path}"
+            )
+    strength = config.get("groove_strength")
+    if strength is not None:
+        if not (isinstance(strength, (int, float)) and 0.0 <= strength <= 1.0):
+            raise ValueError("groove_strength must be a float in [0.0, 1.0]")
+
+
 def validate_genre_config(config) -> bool:
     """Validate a genre config dict. Raises ``ValueError`` on failure."""
     if not isinstance(config, dict):
@@ -153,6 +171,7 @@ def validate_genre_config(config) -> bool:
     _validate_drum_patterns(config)
     _validate_role_params(config)
     _validate_sections(config)
+    _validate_groove(config)
     return True
 
 

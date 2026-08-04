@@ -1,0 +1,7 @@
+{
+  "id": "dubstep_half_time",
+  "resolution": 16,
+  "description": "Half-time dubstep groove. Kick/snare locked to grid, hats loose and slightly ahead for a swaggering feel.",
+  "offsets_ticks": [0, 0, 0, 0, 0, 2, 0, 1, 0, 0, 0, 0, 0, 2, 0, 1],
+  "velocity_scalars": [1.0, 0.6, 0.75, 0.55, 0.85, 0.6, 0.8, 0.5, 1.0, 0.6, 0.75, 0.55, 0.85, 0.6, 0.8, 0.5]
+}

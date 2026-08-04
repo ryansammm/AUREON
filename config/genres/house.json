@@ -689,5 +689,11 @@
       "label": "Drum Layers - Percussion (house)",
       "preset": "electronic_percussion"
     }
-  }
+  },
+  "bass_drum_interlock": {
+    "mode": "lock",
+    "lock_probability": 0.7
+  },
+  "groove_profile": "house_four_on_floor",
+  "groove_strength": 0.8
 }

@@ -1,0 +1,7 @@
+{
+  "id": "dnb_breakneck",
+  "resolution": 16,
+  "description": "Fast DnB breakbeat feel. Snare slightly behind, hats slightly ahead for urgency. Kick locked tight to grid.",
+  "offsets_ticks": [0, 0, -1, 1, 0, 1, -1, 0, 0, 0, -1, 1, 0, 1, -1, 0],
+  "velocity_scalars": [1.0, 0.7, 0.8, 0.65, 0.9, 0.7, 0.85, 0.6, 1.0, 0.7, 0.8, 0.65, 0.9, 0.7, 0.85, 0.6]
+}

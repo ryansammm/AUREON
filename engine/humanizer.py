@@ -6,6 +6,9 @@ Makes a generated line feel played rather than programmed (FR-6):
   EXCEPT the first downbeat of each bar, which stays locked to the grid.
 - Velocity: a gentle phrase arc (rising toward the phrase climax, falling
   at resolution) plus per-note jitter so notes are never identical.
+- Groove profiles: when a genre config specifies a ``groove_profile``,
+  deterministic per-step timing/velocity offsets replace or blend with
+  the random jitter, producing a consistent, genre-typical feel.
 
 Musical assumptions:
 - Offsets are in milliseconds and converted to beats using the tempo, so
@@ -13,6 +16,7 @@ Musical assumptions:
 - Timing is clamped so no note can start before beat 0.0.
 """
 
+import logging
 import math
 import random
 
@@ -21,6 +25,8 @@ from .models import Note
 BEATS_PER_BAR = 4.0
 DEFAULT_PARAMS = {"max_timing_ms": 10, "velocity_jitter": 4}
 _DRUM_ROLES = frozenset({"drum", "drum_layers"})
+
+logger = logging.getLogger(__name__)
 
 
 class Humanizer:
@@ -31,6 +37,21 @@ class Humanizer:
         self.params = {**DEFAULT_PARAMS, **cfg}
         self.swing = config.get("swing") or {}
         self.rng = random.Random(seed)
+
+        # Groove profile integration
+        self._groove_profile = None
+        self._groove_strength = 0.0
+        groove_id = config.get("groove_profile")
+        if groove_id:
+            try:
+                from .groove import load_groove_profile
+                self._groove_profile = load_groove_profile(groove_id)
+                self._groove_strength = float(config.get("groove_strength", 1.0))
+            except FileNotFoundError:
+                logger.warning(
+                    "Groove profile '%s' not found, falling back to random jitter",
+                    groove_id,
+                )
 
     def _apply_swing(self, note: Note) -> None:
         """Delay off-beat steps by a configurable groove amount.
@@ -66,20 +87,35 @@ class Humanizer:
         max_offset = self.params["max_timing_ms"] * bpm / 60000.0
         jitter = self.params["velocity_jitter"]
         drum = role in _DRUM_ROLES
+
+        # When a groove profile is active, use it for timing/velocity
+        # instead of (or blended with) random jitter
+        use_groove = self._groove_profile is not None and self._groove_strength > 0.0
+
         for note in notes:
             is_downbeat = abs(note.start_beat % BEATS_PER_BAR) < 1e-9
-            if not drum and not is_downbeat:
+
+            if use_groove and not drum:
+                # Apply groove profile offsets (handled by groove.apply_groove
+                # which is called upstream before humanize, so here we only
+                # add residual random jitter scaled by (1 - strength))
+                residual = 1.0 - self._groove_strength
+                if not is_downbeat and residual > 0.01:
+                    self._apply_swing(note)
+                    offset = self.rng.uniform(-max_offset, max_offset) * residual
+                    note.start_beat = max(0.0, note.start_beat + offset)
+                    vel_jitter = self.rng.gauss(0, jitter / 2) * residual
+                    note.velocity = max(1, min(127, int(round(note.velocity + vel_jitter))))
+            elif not drum and not is_downbeat:
+                # Original random jitter path
                 self._apply_swing(note)
                 offset = self.rng.uniform(-max_offset, max_offset)
                 note.start_beat = max(0.0, note.start_beat + offset)
 
+            # Phrase arc velocity (always applied, even with groove)
             phrase_pos = (note.start_beat // BEATS_PER_BAR) % 8 / 7.0
             arc = math.sin(phrase_pos * math.pi)
-            velocity = (
-                note.velocity
-                + self.rng.gauss(0, jitter / 2)
-                + arc * 4.0
-                - 2.0
-            )
+            velocity = note.velocity + arc * 4.0 - 2.0
             note.velocity = max(1, min(127, int(round(velocity))))
+
         return notes

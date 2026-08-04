@@ -9,9 +9,6 @@ venv/
 .pytest_cache/
 .tox/
 
-# Tests
-tests/
-
 # Local environment
 .env
 .DS_Store

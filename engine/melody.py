@@ -25,9 +25,11 @@ from typing import Set
 
 from .models import Note
 from .music_utils import snap_pitch_to_scale
+from .harmony import voice_chord
 
 BEATS_PER_BAR = 4.0
 SIXTEENTH_BEAT = 0.25
+STEP_BEAT = 0.25
 DENSITY_TIERS = ["simple", "medium", "complex"]
 CHORD_ROLES = {"pad", "chord"}
 
@@ -52,6 +54,9 @@ class MelodicEngine:
         base_velocity: int = 92,
         allow_passing: bool = False,
         motif: list = None,
+        kick_mask: set = None,
+        interlock_mode: str = "independent",
+        interlock_probability: float = 0.7,
     ) -> list:
         """Return a list of :class:`Note` for the whole progression.
 
@@ -68,6 +73,13 @@ class MelodicEngine:
                 ideation layer. When given it replaces the random motif so
                 the line carries a recognizable theme (re-anchored to each
                 bar's chord root, no periodic inversion).
+            kick_mask: set of absolute beat positions where kick hits occur.
+                When provided with interlock_mode != "independent", bass
+                onsets are biased toward or away from these positions.
+            interlock_mode: ``"lock"`` biases toward kick hits,
+                ``"syncopate"`` biases away, ``"independent"`` ignores mask.
+            interlock_probability: probability (0-1) of conforming to the
+                interlock constraint.  1.0 = strict, 0.0 = independent.
         """
         role_range = self.config["role_ranges"][role]
         default_section = self.config.get("section_template", ["drop"])[0]
@@ -100,6 +112,22 @@ class MelodicEngine:
 
             onsets = self._onsets_from_pattern(rhythm)
             for k, (onset, dur) in enumerate(onsets):
+                # Bass-drum interlock: bias onset selection
+                if kick_mask and interlock_mode != "independent":
+                    bar_start = bar * BEATS_PER_BAR
+                    abs_onset = bar_start + onset
+                    near_kick = any(
+                        abs(abs_onset - kb) < STEP_BEAT * 0.6 for kb in kick_mask
+                    )
+                    if interlock_mode == "lock":
+                        accept = near_kick or self.rng.random() > interlock_probability
+                    elif interlock_mode == "syncopate":
+                        accept = not near_kick or self.rng.random() > interlock_probability
+                    else:
+                        accept = True
+                    if not accept:
+                        continue
+
                 interval = motif_intervals[k % len(motif_intervals)]
                 if invert:
                     interval = -interval
@@ -481,7 +509,11 @@ class MelodicEngine:
     # Voice-leading helpers
     # ------------------------------------------------------------------ #
     def _smooth_voicing(self, chord, role_range, prev_voicing, num_notes=4) -> list:
-        """Pick chord tones spread in register with smooth motion."""
+        """Pick chord tones with smooth motion via cost-based voicing selection."""
+        candidate = voice_chord(chord, prev_voicing, role_range)
+        if candidate.pitches:
+            return candidate.pitches
+        # Fallback: basic voicing if no candidates generated
         voicing = []
         for pc in sorted(set(chord.pitch_classes)):
             opts = self._pitches_for_pc(pc, role_range["min"], role_range["max"])

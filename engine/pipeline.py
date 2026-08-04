@@ -5,17 +5,34 @@ integration tests share a single path. Selector (Layer 4) and
 humanization (Layer 5) land in later phases and slot in here.
 """
 
+import logging
 import random
 
 from .arrangement import ArrangementEngine
 from .drums import DrumEngine
+from .groove import apply_groove, load_groove_profile
 from .harmony import HarmonicEngine
 from .humanizer import Humanizer
 from .melody import MelodicEngine, CHORD_ROLES
 from .models import Track
 from .music_utils import get_scale_pitch_classes
 
+logger = logging.getLogger(__name__)
 PERCUSSION_ROLES = {"drum", "drum_layers"}
+
+
+def _apply_groove_if_configured(config: dict, notes: list, role: str) -> None:
+    """Apply groove profile to notes if configured in genre config."""
+    groove_id = config.get("groove_profile")
+    if not groove_id:
+        return
+    try:
+        profile = load_groove_profile(groove_id)
+        strength = float(config.get("groove_strength", 1.0))
+        bpm = config.get("default_bpm", 140)
+        apply_groove(notes, profile, role, strength=strength, bpm=bpm)
+    except FileNotFoundError:
+        logger.warning("Groove profile '%s' not found, skipping", groove_id)
 
 
 def build_tempo_map(config: dict, plan: list, bpm: int) -> list:
@@ -166,6 +183,7 @@ def generate_track(
             melody, role, progression, scale_pcs, plan, complexity, motif=motif
         )
 
+    _apply_groove_if_configured(config, notes, role)
     if humanize and notes:
         Humanizer(config, seed).humanize(notes, bpm)
 
@@ -190,7 +208,9 @@ def generate_track(
     return track, progression, plan
 
 
-def _role_notes(melody, role, progression, scale_pcs, plan, complexity, motif=None):
+def _role_notes(melody, role, progression, scale_pcs, plan, complexity,
+                motif=None, kick_mask=None, interlock_mode="independent",
+                interlock_probability=0.7):
     """Route a melodic role to its generator and return the notes."""
     if role in CHORD_ROLES:
         return melody.generate_chord_track(progression, scale_pcs, role=role, plan=plan)
@@ -213,7 +233,8 @@ def _role_notes(melody, role, progression, scale_pcs, plan, complexity, motif=No
         )
     return melody.generate_bassline(
         progression, scale_pcs, role=role, plan=plan, complexity=complexity,
-        motif=motif,
+        motif=motif, kick_mask=kick_mask, interlock_mode=interlock_mode,
+        interlock_probability=interlock_probability,
     )
 
 
@@ -237,6 +258,10 @@ def generate_composition(
     the result is one coherent composition. Rhythm-clash avoidance comes
     from distinct per-role rhythm profiles in the genre config and from
     register separation (bass low, chord mid, lead high).
+
+    When bass/sub_bass and drum roles are both requested, drums are
+    generated first and the kick-hit positions are extracted so the
+    bass generator can lock to (or syncopate against) the kick pattern.
 
     Returns:
         Tuple of (list of :class:`Track`, list of :class:`ChordBar`,
@@ -263,8 +288,33 @@ def generate_composition(
     )
 
     melody = MelodicEngine(config, seed)
+
+    # Interlock: determine if bass needs kick_mask
+    interlock_cfg = config.get("bass_drum_interlock") or {}
+    interlock_mode = interlock_cfg.get("mode", "independent")
+    interlock_prob = float(interlock_cfg.get("lock_probability", 0.7))
+    has_drum = "drum" in roles
+    bass_roles = {"bass", "sub_bass"}
+    need_interlock = has_drum and interlock_mode != "independent" and bool(bass_roles & set(roles))
+
+    # Phase 1: generate drums first if interlock is needed
+    drum_track = None
+    kick_mask = None
     tracks = []
+    if need_interlock:
+        drum_engine = DrumEngine(config, seed)
+        drum_track = drum_engine.generate_track(
+            plan, humanize=humanize, bpm=bpm, seed=seed
+        )
+        drum_track.cc = build_cc_automation(config, plan, "drum")
+        kick_mask = drum_engine.extract_kick_mask(plan)
+        tracks.append(drum_track)
+
+    # Phase 2: generate all roles
     for role in roles:
+        # Skip drums if already generated
+        if need_interlock and role == "drum":
+            continue
         if role == "drum":
             track = DrumEngine(config, seed).generate_track(
                 plan, humanize=humanize, bpm=bpm, seed=seed
@@ -279,9 +329,18 @@ def generate_composition(
             track.cc = build_cc_automation(config, plan, role)
             tracks.append(track)
             continue
+
+        # Thread kick_mask into bass roles
+        km = kick_mask if (kick_mask and role in bass_roles) else None
+        im = interlock_mode if (km) else "independent"
+        ip = interlock_prob if (km) else 0.7
+
         notes = _role_notes(
-            melody, role, progression, scale_pcs, plan, complexity, motif=motif
+            melody, role, progression, scale_pcs, plan, complexity,
+            motif=motif, kick_mask=km, interlock_mode=im,
+            interlock_probability=ip,
         )
+        _apply_groove_if_configured(config, notes, role)
         if humanize:
             Humanizer(config, seed).humanize(notes, bpm)
         intent = config["instrument_intent"][role]

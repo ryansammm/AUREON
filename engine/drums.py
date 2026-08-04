@@ -50,6 +50,30 @@ class DrumEngine:
         section_patterns = self.patterns.get(section) or {}
         return section_patterns.get(voice) or ""
 
+    def extract_kick_mask(self, plan: list) -> set:
+        """Return a set of beat positions where kick hits occur.
+
+        The mask contains absolute beat positions (bar * 4 + step * 0.25)
+        for every active kick step across all bars in the plan.  This is
+        used by the bass interlock system to bias bass onsets toward or
+        away from kick hits.
+        """
+        kick_voice = None
+        for voice, note_number in self.notes_map.items():
+            if note_number == DEFAULT_DRUM_NOTES["kick"]:
+                kick_voice = voice
+                break
+        if kick_voice is None:
+            return set()
+
+        mask: set = set()
+        for sb in plan:
+            pattern = self._pattern_for(sb.name, kick_voice)
+            for step, char in enumerate(pattern):
+                if char in ("x", "X"):
+                    mask.add(sb.bar * BEATS_PER_BAR + step * STEP_BEAT)
+        return mask
+
     def generate_track(self, plan: list, humanize=True, bpm=140, seed=None) -> Track:
         """Return a :class:`Track` with role ``drum`` for the given plan.
 

@@ -654,5 +654,11 @@
       "label": "Drum Layers - Percussion (techno)",
       "preset": "electronic_percussion"
     }
-  }
+  },
+  "bass_drum_interlock": {
+    "mode": "lock",
+    "lock_probability": 0.8
+  },
+  "groove_profile": "techno_driving",
+  "groove_strength": 0.9
 }

@@ -1,0 +1,7 @@
+{
+  "id": "techno_driving",
+  "resolution": 16,
+  "description": "Tight, mechanical techno groove. Minimal swing, subtle velocity variation on hats for relentless forward drive.",
+  "offsets_ticks": [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+  "velocity_scalars": [1.0, 0.8, 0.9, 0.75, 1.0, 0.8, 0.9, 0.75, 1.0, 0.8, 0.9, 0.75, 1.0, 0.8, 0.9, 0.75]
+}

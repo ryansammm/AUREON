@@ -651,5 +651,11 @@
       "label": "Drum Layers - Percussion (drum_and_bass)",
       "preset": "electronic_percussion"
     }
-  }
+  },
+  "bass_drum_interlock": {
+    "mode": "lock",
+    "lock_probability": 0.75
+  },
+  "groove_profile": "dnb_breakneck",
+  "groove_strength": 0.8
 }

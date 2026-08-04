@@ -56,3 +56,12 @@ class SectionBar:
     density: float
     register_shift: int
     base_velocity: int
+
+
+@dataclass
+class VoicingCandidate:
+    """A candidate chord voicing with MIDI pitches."""
+
+    pitches: List[int]
+    inversion: int = 0
+    register_span: int = 0

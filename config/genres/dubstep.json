@@ -654,5 +654,11 @@
       "section": "drop2",
       "semitones": 1
     }
-  ]
+  ],
+  "bass_drum_interlock": {
+    "mode": "syncopate",
+    "lock_probability": 0.6
+  },
+  "groove_profile": "dubstep_half_time",
+  "groove_strength": 0.85
 }

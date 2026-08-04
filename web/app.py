@@ -328,6 +328,8 @@ def _generate_payload(data: dict, report=None) -> dict:
     for sb in plan:
         section_counts[sb.name] = section_counts.get(sb.name, 0) + 1
 
+    arrangement = ", ".join(f"{k}x{v}" for k, v in section_counts.items())
+
     candidate_entries = []
     rendered_candidates = summary[:app.config["MAX_CANDIDATE_AUDIO"]]
     for j, item in enumerate(rendered_candidates, start=1):
@@ -372,7 +374,7 @@ def _generate_payload(data: dict, report=None) -> dict:
         "key": f"{key_root} {mode}",
         "bpm": bpm,
         "humanized": humanize,
-        "arrangement": ", ".join(f"{k}x{v}" for k, v in section_counts.items()),
+        "arrangement": arrangement,
         "chords": " -> ".join(c.degree for c in progression),
         "bars": len(plan),
         "tracks": [
@@ -769,4 +771,5 @@ def spa(path):
 
 if __name__ == "__main__":
     port = int(os.environ.get("AUREON_PORT", "8000"))
-    app.run(host="127.0.0.1", port=port, debug=False)
+    host = os.environ.get("AUREON_HOST", "127.0.0.1")
+    app.run(host=host, port=port, debug=False)

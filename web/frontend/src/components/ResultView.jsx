@@ -1,6 +1,7 @@
 import { exportUrl, midiUrl, trackMidiUrl, wavUrl } from '../api'
 import { downloadProject } from '../history'
 import { roleColor, roleLabel } from '../roles'
+import { log } from '../logger'
 import WaveformPlayer from './WaveformPlayer'
 import LivePlayer from './LivePlayer'
 import PianoRoll from './PianoRoll'
@@ -39,13 +40,14 @@ export default function ResultView({ result, params, onNew, onSelectCandidate })
           <div className="flex gap-2">
             <button
               className="glass rounded-lg px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-[#ff7a1a]/60 hover:text-[#ffb25e]"
-              onClick={() => downloadProject(params, r)}
+              onClick={() => { log.info('DOWNLOAD_PROJECT', { genre: r.genre }); downloadProject(params, r) }}
             >
               💾 Save project
             </button>
             <a
               className="glass rounded-lg px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-[#ff7a1a]/60 hover:text-[#ffb25e]"
               href={exportUrl(r.mid)}
+              onClick={() => log.info('DOWNLOAD_BUNDLE', { genre: r.genre })}
             >
               ⬇ Export bundle (ZIP)
             </a>
@@ -54,12 +56,14 @@ export default function ResultView({ result, params, onNew, onSelectCandidate })
               href={wavUrl(r.wav)}
               target="_blank"
               rel="noreferrer"
+              onClick={() => log.info('LISTEN_MASTER', { genre: r.genre })}
             >
               ▶ Listen
             </a>
             <a
               className="btn-primary rounded-lg px-4 py-2 text-sm"
               href={midiUrl(r.mid)}
+              onClick={() => log.info('DOWNLOAD_MIDI', { genre: r.genre })}
             >
               Download MIDI
             </a>

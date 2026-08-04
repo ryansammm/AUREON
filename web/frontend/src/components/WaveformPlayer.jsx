@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { wavUrl, fetchWithTimeout } from '../api'
+import { log } from '../logger'
 
 function computePeaks(data, count) {
   const block = Math.floor(data.length / count)
@@ -27,6 +28,17 @@ export default function WaveformPlayer({ file, accent = '#ff7a1a', height = 96, 
   const [error, setError] = useState(false)
   const rafRef = useRef(null)
 
+  // Store state in refs so draw can read latest without changing identity
+  const progressRef = useRef(progress)
+  const durationRef = useRef(duration)
+  const accentRef = useRef(accent)
+  const heightRef = useRef(height)
+
+  progressRef.current = progress
+  durationRef.current = duration
+  accentRef.current = accent
+  heightRef.current = height
+
   const draw = useCallback(() => {
     const canvas = canvasRef.current
     const audio = audioRef.current
@@ -34,7 +46,7 @@ export default function WaveformPlayer({ file, accent = '#ff7a1a', height = 96, 
     const ctx = canvas.getContext('2d')
     const rect = canvas.parentElement?.getBoundingClientRect()
     const W = rect ? rect.width : canvas.width / (window.devicePixelRatio || 1)
-    const H = rect ? rect.height : height
+    const H = rect ? rect.height : heightRef.current
     const peaks = peaksRef.current
     const n = peaks.length || 1
 
@@ -47,7 +59,7 @@ export default function WaveformPlayer({ file, accent = '#ff7a1a', height = 96, 
     const grid = 24
     for (let x = 0; x < W; x += grid) ctx.fillRect(x, 0, 1, H)
 
-    const played = (progress / (duration || 1)) * W
+    const played = (progressRef.current / (durationRef.current || 1)) * W
 
     // baseline
     ctx.strokeStyle = 'rgba(255,255,255,0.08)'
@@ -64,7 +76,7 @@ export default function WaveformPlayer({ file, accent = '#ff7a1a', height = 96, 
         const x = (W / n) * i
         const h = Math.max(2, peaks[i] * (H - 8))
         const isPlayed = x <= played
-        ctx.fillStyle = isPlayed ? accent : 'rgba(255,255,255,0.22)'
+        ctx.fillStyle = isPlayed ? accentRef.current : 'rgba(255,255,255,0.22)'
         const r = Math.min(barW / 2, 2)
         ctx.beginPath()
         ctx.roundRect(x, (H - h) / 2, barW, h, r)
@@ -77,7 +89,7 @@ export default function WaveformPlayer({ file, accent = '#ff7a1a', height = 96, 
       ctx.fillStyle = 'rgba(255,255,255,0.85)'
       ctx.fillRect(played - 1, 0, 2, H)
     }
-  }, [progress, duration, accent])
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -102,19 +114,18 @@ export default function WaveformPlayer({ file, accent = '#ff7a1a', height = 96, 
         peaksRef.current = computePeaks(decoded.getChannelData(0), 900)
         ctx.close().catch(() => {})
         setLoading(false)
+        log.info('WAVEFORM_LOADED', { file, duration: decoded.duration.toFixed(2) })
         draw()
       } catch (e) {
+        log.error('WAVEFORM_FAILED', { file, error: String(e) })
         setLoading(false)
         setError(true)
       }
     })()
 
-    const onPlay = () => setPlaying(true)
-    const onPause = () => setPlaying(false)
-    const onEnded = () => {
-      setPlaying(false)
-      setProgress(0)
-    }
+    const onPlay = () => { log.info('WAVEFORM_PLAY', { file }); setPlaying(true) }
+    const onPause = () => { log.info('WAVEFORM_PAUSE', { file }); setPlaying(false) }
+    const onEnded = () => { log.info('WAVEFORM_ENDED', { file }); setPlaying(false); setProgress(0) }
     const onTime = () => {
       if (audio.duration) {
         setProgress(audio.currentTime)
@@ -145,14 +156,18 @@ export default function WaveformPlayer({ file, accent = '#ff7a1a', height = 96, 
       const rect = canvas.parentElement.getBoundingClientRect()
       const dpr = window.devicePixelRatio || 1
       canvas.width = rect.width * dpr
-      canvas.height = (height || 96) * dpr
-      canvas.getContext('2d').scale(dpr, dpr)
+      canvas.height = heightRef.current * dpr
       draw()
     }
     resize()
     window.addEventListener('resize', resize)
     return () => window.removeEventListener('resize', resize)
-  }, [height, draw])
+  }, [draw])
+
+  // Redraw when progress/duration change
+  useEffect(() => {
+    draw()
+  }, [progress, duration, draw])
 
   function scrub(e) {
     const audio = audioRef.current

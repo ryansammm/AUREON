@@ -31,3 +31,4 @@ server.*.log
 *.log
 server.status.json
 watchdog.lock
+opencode.json

@@ -60,6 +60,7 @@ if os.name == "nt":
 _state = {"state": "starting", "started": time.time(), "checks": 0,
           "restarts": 0, "hot": 0}
 _stop = False
+_spawned_server_pid: int | None = None
 
 
 # ── logging / status ───────────────────────────────────────────────────
@@ -160,6 +161,24 @@ def clean_orphans(kill_vite: bool) -> None:
             killed.append(f"vite:{pid}")
     if killed:
         log("cleaned orphans: " + ", ".join(killed))
+
+
+def cleanup_on_exit() -> None:
+    """Kill server, fluidsynth, vite — everything we started or that is orphaned."""
+    killed: list[str] = []
+    for pid in fluidsynth_pids():
+        kill_pid(pid)
+        killed.append(f"fluidsynth:{pid}")
+    for pid in server_pids():
+        kill_pid(pid)
+        killed.append(f"app:{pid}")
+    for pid in vite_pids():
+        kill_pid(pid)
+        killed.append(f"vite:{pid}")
+    if killed:
+        log("cleanup on exit: " + ", ".join(killed))
+    release_lock()
+    set_state("stopped", "watchdog exiting")
 
 
 # ── spawning ───────────────────────────────────────────────────────────
@@ -316,6 +335,7 @@ def release_lock() -> None:
 
 def _on_signal(signum, frame):  # noqa: ANN001
     global _stop
+    log(f"received signal {signum} - shutting down")
     _stop = True
 
 
@@ -445,8 +465,7 @@ def main() -> None:
             sys.exit(code or 0)
         run_daemon(args)
     finally:
-        release_lock()
-        write_status(_state["state"], pid=os.getpid())
+        cleanup_on_exit()
 
 
 if __name__ == "__main__":

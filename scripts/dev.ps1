@@ -58,8 +58,12 @@ function Test-Healthy {
 # window waits for the server to exit before returning the prompt ("hang").
 # Win32_Process.Create spawns it under WMI with its own console instead.
 function Start-Detached([string]$CommandLine) {
-    Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $CommandLine } |
-        Out-Null
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = "cmd.exe"
+    $psi.Arguments = "/c $CommandLine"
+    $psi.CreateNoWindow = $true
+    $psi.UseShellExecute = $false
+    [System.Diagnostics.Process]::Start($psi) | Out-Null
 }
 
 function Get-Python {
@@ -72,7 +76,7 @@ function Start-Server {
     $py = Get-Python
     $out = Join-Path $root "server.out.log"
     $err = Join-Path $root "server.err.log"
-    $cmd = "cmd.exe /c cd /d `"$root`" && `"$py`" web\app.py > `"$out`" 2> `"$err`""
+    $cmd = "cd /d `"$root`" && `"$py`" web\app.py > `"$out`" 2> `"$err`""
     Start-Detached $cmd
 }
 
@@ -80,7 +84,7 @@ function Start-Vite {
     $out = Join-Path $root "vite.out.log"
     $err = Join-Path $root "vite.err.log"
     $fe = Join-Path $root "web\frontend"
-    $cmd = "cmd.exe /c cd /d `"$fe`" && npm run dev > `"$out`" 2> `"$err`""
+    $cmd = "cd /d `"$fe`" && npm run dev > `"$out`" 2> `"$err`""
     Start-Detached $cmd
 }
 
@@ -90,7 +94,7 @@ function Start-Watchdog {
     $flags = ""
     if ($Dev) { $flags += " --dev" }
     if ($Hot) { $flags += " --hot" }
-    $cmd = "cmd.exe /c cd /d `"$root`" && `"$py`" scripts\watchdog.py$flags > `"$out`" 2>&1"
+    $cmd = "cd /d `"$root`" && `"$py`" scripts\watchdog.py$flags > `"$out`" 2>&1"
     Start-Detached $cmd
 }
 
@@ -248,8 +252,10 @@ if (-not $Start) {
     exit 1
 }
 
+# Always clean orphans before starting to prevent stale processes
+Stop-All
+
 if (-not (Test-PortFree)) {
-    Stop-All
     "port $port was in use -> cleared"
 }
 

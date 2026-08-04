@@ -33,6 +33,12 @@ if not exist ".venv\Scripts\python.exe" (
     exit /b 1
 )
 
+rem -- Kill ALL orphaned AUREON processes from previous runs ----
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -and ($_.CommandLine -match 'web[/\\]app\.py|watchdog\.py') } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }; " ^
+  "Get-Process -Name 'fluidsynth*' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue"
+timeout /t 2 /nobreak >nul 2>&1
+
 rem -- Pre-flight: frontend build --------------------------------
 if not exist "web\frontend\dist\index.html" (
     echo [WARN] Frontend not built. Building now...
@@ -86,7 +92,7 @@ if "!HC!"=="200" (
 rem -- Start server + watchdog in the background -------------------
 echo Starting AUREON server + watchdog (background, self-healing)...
 echo.
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\dev.ps1" -Watch
+powershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "%~dp0scripts\dev.ps1" -Watch
 if !errorlevel! neq 0 (
     echo [ERROR] Failed to start AUREON. See watchdog.log for details.
     pause

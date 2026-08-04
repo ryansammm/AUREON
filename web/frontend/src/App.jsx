@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { fetchConfig, streamGenerate } from './api'
 import { loadHistory, saveHistoryEntry, makeHistoryEntry, removeHistoryEntry } from './history'
+import { log } from './logger'
 import GeneratorView from './components/GeneratorView'
 import ResultView from './components/ResultView'
 import HistoryView from './components/HistoryView'
 import CompareView from './components/CompareView'
 import ImportView from './components/ImportView'
 import ConfigView from './components/ConfigView'
+import LogViewer from './components/LogViewer'
 
 const FALLBACK_STEPS = [
   'Mapping genre DNA',
@@ -31,9 +33,18 @@ export default function App() {
   const [pendingProject, setPendingProject] = useState(null)
   const [formSnapshot, setFormSnapshot] = useState(null)
   const [comparePair, setComparePair] = useState(null)
+  const [logOpen, setLogOpen] = useState(false)
 
   useEffect(() => {
-    fetchConfig().then(setConfig).catch((e) => setConfigError(String(e)))
+    fetchConfig()
+      .then((c) => {
+        log.info('CONFIG_LOADED', { genres: c.genres?.length, roles: c.roles?.length })
+        setConfig(c)
+      })
+      .catch((e) => {
+        log.error('CONFIG_FAILED', { error: String(e) })
+        setConfigError(String(e))
+      })
   }, [])
 
   useEffect(() => {
@@ -43,7 +54,12 @@ export default function App() {
     }
   }, [view])
 
+  useEffect(() => {
+    log.info('VIEW', { view })
+  }, [view])
+
   function handleGenerate(params) {
+    log.info('GENERATE_START', { genre: params.genre, bpm: params.bpm, key: params.key, bars: params.bars, roles: params.roles, seed: params.seed })
     setView('loading')
     setError(null)
     setResult(null)
@@ -53,27 +69,32 @@ export default function App() {
       { ...params, stems: true },
       {
         onStep: (s) => {
+          log.info('GENERATE_STEP', { message: s.message, pct: s.pct })
           setLoadMsg(s.message)
           setLoadPct(s.pct)
         },
         onResult: (data) => {
+          log.info('GENERATE_DONE', { genre: data.genre, key: data.key, bpm: data.bpm, tracks: data.tracks?.length })
           setResult(data)
           setLastParams(params)
           setHistory(saveHistoryEntry(makeHistoryEntry(data, params)))
           setView('result')
         },
         onError: (e) => {
+          log.error('GENERATE_FAILED', { error: String(e) })
           setError(String(e))
           setView('form')
         },
       },
     ).catch((e) => {
+      log.error('GENERATE_FAILED', { error: String(e) })
       setError(String(e))
       setView('form')
     })
   }
 
   function openHistoryEntry(entry) {
+    log.info('HISTORY_OPEN', { id: entry.id, genre: entry.result?.genre })
     setResult(entry.result)
     setLastParams(entry.params)
     setView('result')
@@ -81,6 +102,7 @@ export default function App() {
 
   function handleSelectCandidate(candidate) {
     if (!candidate) return
+    log.info('CANDIDATE_SELECT', { rank: candidate.rank, genre: candidate.genre })
     setResult((prev) => ({
       ...prev,
       genre: candidate.genre || prev.genre,
@@ -103,10 +125,39 @@ export default function App() {
     return view === key
   }
 
+  const particles = useMemo(
+    () =>
+      Array.from({ length: 18 }, (_, i) => ({
+        left: (i * 53 + 17) % 100,
+        size: 2 + ((i * 7) % 4),
+        duration: 12 + ((i * 3) % 9),
+        delay: -((i * 5) % 12),
+      })),
+    [],
+  )
+
   return (
-    <div className="bg-aurora min-h-full">
+    <div className="bg-aurora relative isolate min-h-full">
+      <div className="aurora-layer" aria-hidden="true">
+        <div className="aurora-blob blob-1" />
+        <div className="aurora-blob blob-2" />
+        <div className="aurora-blob blob-3" />
+        {particles.map((p, i) => (
+          <span
+            key={i}
+            className="aurora-particle"
+            style={{
+              left: `${p.left}%`,
+              width: p.size,
+              height: p.size,
+              animationDuration: `${p.duration}s`,
+              animationDelay: `${p.delay}s`,
+            }}
+          />
+        ))}
+      </div>
       <header className="sticky top-0 z-20 glass border-b">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-3">
+        <div className="mx-auto flex max-w-[1560px] flex-wrap items-center justify-between gap-3 px-6 py-3">
           <button className="flex items-center gap-3" onClick={() => setView('form')} title="Back to compose">
             <span className="text-2xl text-accent">♫</span>
             <h1 className="text-xl font-extrabold tracking-wide text-glow">AUREON by XYKS</h1>
@@ -142,12 +193,19 @@ export default function App() {
                   {label}
                 </button>
               ))}
+              <button
+                className="rounded-lg border border-white/10 px-2 py-2 text-sm text-slate-400 transition hover:border-white/25 hover:text-slate-200"
+                onClick={() => setLogOpen(true)}
+                title="Debug logs"
+              >
+                🐛
+              </button>
             </nav>
           )}
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 py-8">
+      <main className="mx-auto max-w-[1560px] px-6 py-8">
         {configError && (
           <div className="glass rounded-xl p-4 text-sm text-red-300">{configError}</div>
         )}
@@ -212,6 +270,7 @@ export default function App() {
       <footer className="py-6 text-center text-xs text-slate-500/70">
         Developed by <span className="font-semibold text-slate-400">XYKS</span>
       </footer>
+      <LogViewer open={logOpen} onClose={() => setLogOpen(false)} />
     </div>
   )
 }

@@ -79,6 +79,24 @@ export default function App() {
     setView('result')
   }
 
+  function handleSelectCandidate(candidate) {
+    if (!candidate) return
+    setResult((prev) => ({
+      ...prev,
+      genre: candidate.genre || prev.genre,
+      key: candidate.key || prev.key,
+      bpm: candidate.bpm || prev.bpm,
+      tracks: candidate.tracks,
+      wav: candidate.wav,
+      mid: candidate.mid,
+      arrangement: candidate.arrangement || prev.arrangement,
+      chords: candidate.chords || prev.chords,
+      stems: prev.stems,
+      ai: prev.ai,
+      candidates: prev.candidates,
+    }))
+  }
+
   const isNavActive = (key) => {
     if (key === 'form') return view === 'form' || view === 'loading' || view === 'result'
     if (key === 'history') return view === 'history' || view === 'compare'
@@ -152,6 +170,7 @@ export default function App() {
             result={result}
             params={lastParams}
             onNew={() => setView('form')}
+            onSelectCandidate={handleSelectCandidate}
           />
         )}
 

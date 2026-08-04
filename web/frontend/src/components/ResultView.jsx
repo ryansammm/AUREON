@@ -16,7 +16,7 @@ const Chip = ({ children, color = '#ffb25e' }) => (
   </span>
 )
 
-export default function ResultView({ result, params, onNew }) {
+export default function ResultView({ result, params, onNew, onSelectCandidate }) {
   const r = result
   const ai = r.ai || {}
   const totalNotes = r.tracks.reduce((s, t) => s + t.notes, 0)
@@ -203,7 +203,7 @@ export default function ResultView({ result, params, onNew }) {
 
       {/* ─── Candidates A/B ─── */}
       {r.candidates?.length > 0 && (
-        <Candidates candidates={r.candidates} mainWav={r.wav} />
+        <Candidates candidates={r.candidates} mainWav={r.wav} onSelect={onSelectCandidate} />
       )}
     </div>
   )

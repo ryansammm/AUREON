@@ -32,11 +32,14 @@ export default function WaveformPlayer({ file, accent = '#ff7a1a', height = 96, 
     const audio = audioRef.current
     if (!canvas || !audio) return
     const ctx = canvas.getContext('2d')
-    const W = canvas.width
-    const H = canvas.height
+    const rect = canvas.parentElement?.getBoundingClientRect()
+    const W = rect ? rect.width : canvas.width / (window.devicePixelRatio || 1)
+    const H = rect ? rect.height : height
     const peaks = peaksRef.current
     const n = peaks.length || 1
 
+    const dpr = window.devicePixelRatio || 1
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, W, H)
 
     // grid
@@ -136,10 +139,20 @@ export default function WaveformPlayer({ file, accent = '#ff7a1a', height = 96, 
   }, [src, draw])
 
   useEffect(() => {
-    const onResize = () => draw()
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [draw])
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const resize = () => {
+      const rect = canvas.parentElement.getBoundingClientRect()
+      const dpr = window.devicePixelRatio || 1
+      canvas.width = rect.width * dpr
+      canvas.height = (height || 96) * dpr
+      canvas.getContext('2d').scale(dpr, dpr)
+      draw()
+    }
+    resize()
+    window.addEventListener('resize', resize)
+    return () => window.removeEventListener('resize', resize)
+  }, [height, draw])
 
   function scrub(e) {
     const audio = audioRef.current

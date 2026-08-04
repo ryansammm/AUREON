@@ -349,6 +349,18 @@ def _generate_payload(data: dict, report=None) -> dict:
             "ai_reason": item.get("ai_reason"),
             "mid": c_mid.name,
             "wav": c_wav.name,
+            "tracks": [
+                {
+                    "role": t.role,
+                    "name": t.track_name,
+                    "preset": t.suggested_preset,
+                    "notes": len(t.notes),
+                    "midi": _serialize_notes(t),
+                }
+                for t in item["tracks"]
+            ],
+            "arrangement": arrangement,
+            "chords": " -> ".join(c.degree for c in progression),
         })
 
     step("Done", 1.0)

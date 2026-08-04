@@ -2,9 +2,19 @@ import { useState } from 'react'
 import { wavUrl } from '../api'
 import WaveformPlayer from './WaveformPlayer'
 
-export default function Candidates({ candidates, mainWav }) {
+export default function Candidates({ candidates, mainWav, onSelect }) {
   const [open, setOpen] = useState(candidates.length === 1)
   const [sel, setSel] = useState('main')
+
+  function handleSelect(rank) {
+    if (sel === String(rank)) {
+      setSel('main')
+      if (onSelect) onSelect(null)
+    } else {
+      setSel(String(rank))
+      if (onSelect) onSelect(candidates.find((c) => c.rank === rank))
+    }
+  }
 
   return (
     <div className="glass rounded-2xl p-5">
@@ -63,7 +73,7 @@ export default function Candidates({ candidates, mainWav }) {
               return (
                 <button
                   key={c.rank}
-                  onClick={() => setSel(active ? 'main' : String(c.rank))}
+                  onClick={() => handleSelect(c.rank)}
                   className={`rounded-xl border p-3 text-left transition ${
                     active
                       ? 'border-[#ff7a1a] bg-[#ff7a1a]/10'

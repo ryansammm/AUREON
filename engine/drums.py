@@ -85,7 +85,7 @@ class DrumEngine:
                     )
 
         if humanize:
-            Humanizer(self.config, seed).humanize(notes, bpm)
+            Humanizer(self.config, seed).humanize(notes, bpm, role="drum")
 
         intent = self.config.get("instrument_intent", {}).get("drum") or {
             "label": "Drums",
@@ -170,7 +170,7 @@ class DrumEngine:
                         )
 
         if humanize:
-            Humanizer(self.config, seed).humanize(notes, bpm)
+            Humanizer(self.config, seed).humanize(notes, bpm, role="drum_layers")
 
         intent = self.config.get("instrument_intent", {}).get("drum_layers") or {
             "label": "Drum Layers - Percussion",

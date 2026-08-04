@@ -19,7 +19,8 @@ import random
 from .models import Note
 
 BEATS_PER_BAR = 4.0
-DEFAULT_PARAMS = {"max_timing_ms": 25, "velocity_jitter": 4}
+DEFAULT_PARAMS = {"max_timing_ms": 10, "velocity_jitter": 4}
+_DRUM_ROLES = frozenset({"drum", "drum_layers"})
 
 
 class Humanizer:
@@ -52,18 +53,22 @@ class Humanizer:
         if on_offbeat:
             note.start_beat += amount * step
 
-    def humanize(self, notes: list, bpm: float) -> list:
+    def humanize(self, notes: list, bpm: float, role: str = None) -> list:
         """Mutate and return ``notes`` with timing/velocity humanization.
 
         Args:
             notes: list of :class:`Note` (mutated in place).
             bpm: tempo used to convert millisecond offsets to beats.
+            role: instrument role.  Drums keep velocity humanization
+                  (jitter + phrase arc) but skip micro-timing and swing
+                  so the groove stays tight.
         """
         max_offset = self.params["max_timing_ms"] * bpm / 60000.0
         jitter = self.params["velocity_jitter"]
+        drum = role in _DRUM_ROLES
         for note in notes:
             is_downbeat = abs(note.start_beat % BEATS_PER_BAR) < 1e-9
-            if not is_downbeat:
+            if not drum and not is_downbeat:
                 self._apply_swing(note)
                 offset = self.rng.uniform(-max_offset, max_offset)
                 note.start_beat = max(0.0, note.start_beat + offset)

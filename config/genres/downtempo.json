@@ -509,7 +509,7 @@
     "cc11": true
   },
   "humanize": {
-    "max_timing_ms": 25,
+    "max_timing_ms": 10,
     "velocity_jitter": 4
   },
   "swing": {

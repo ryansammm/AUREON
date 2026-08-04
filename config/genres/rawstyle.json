@@ -1,0 +1,48 @@
+{
+  "parent_genre": "hardstyle",
+  "genre": "rawstyle",
+  "default_bpm": 155,
+  "swing": {
+    "resolution": 16,
+    "amount": 0.02
+  },
+  "scale_pool": [
+    "phrygian",
+    "natural_minor",
+    "harmonic_minor"
+  ],
+  "section_density": {
+    "intro": 0.4,
+    "breakdown": 0.3,
+    "build": 0.75,
+    "drop": 1.0,
+    "drop2": 1.0,
+    "outro": 0.35
+  },
+  "section_velocity": {
+    "intro": 78,
+    "breakdown": 82,
+    "build": 96,
+    "drop": 116,
+    "drop2": 116,
+    "outro": 76
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Distorted (Raw)",
+      "preset": "distorted_bass / raw"
+    },
+    "lead": {
+      "label": "Lead - Screech (Rawstyle)",
+      "preset": "screech_synth / distorted"
+    },
+    "pad": {
+      "label": "Pad - Dark (Rawstyle)",
+      "preset": "dark_pad / distorted"
+    },
+    "drum": {
+      "label": "Drums - Hard (Rawstyle)",
+      "preset": "hardstyle_kit / distorted"
+    }
+  }
+}

@@ -6,6 +6,7 @@ import ResultView from './components/ResultView'
 import HistoryView from './components/HistoryView'
 import CompareView from './components/CompareView'
 import ImportView from './components/ImportView'
+import ConfigView from './components/ConfigView'
 
 const FALLBACK_STEPS = [
   'Mapping genre DNA',
@@ -90,7 +91,7 @@ export default function App() {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-3">
           <button className="flex items-center gap-3" onClick={() => setView('form')} title="Back to compose">
             <span className="text-2xl text-accent">♫</span>
-            <h1 className="text-xl font-extrabold tracking-wide text-glow">AUREON</h1>
+            <h1 className="text-xl font-extrabold tracking-wide text-glow">AUREON by XYKS</h1>
             <span className="rounded-full border border-[#ff7a1a]/40 bg-[#ff7a1a]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-[#ffb25e]">
               Phase 5 · AI
             </span>
@@ -109,6 +110,7 @@ export default function App() {
                 { key: 'form', label: 'Compose' },
                 { key: 'history', label: `History${history.length ? ` (${history.length})` : ''}` },
                 { key: 'import', label: 'Import MIDI' },
+                { key: 'settings', label: 'Settings' },
               ].map(({ key, label }) => (
                 <button
                   key={key}
@@ -183,7 +185,14 @@ export default function App() {
             onBack={() => setView('form')}
           />
         )}
+
+        {view === 'settings' && (
+          <ConfigView onBack={() => setView('form')} />
+        )}
       </main>
+      <footer className="py-6 text-center text-xs text-slate-500/70">
+        Developed by <span className="font-semibold text-slate-400">XYKS</span>
+      </footer>
     </div>
   )
 }

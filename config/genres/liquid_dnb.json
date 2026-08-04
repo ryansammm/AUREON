@@ -1,0 +1,56 @@
+{
+  "parent_genre": "drum_and_bass",
+  "genre": "liquid_dnb",
+  "default_bpm": 174,
+  "swing": {
+    "resolution": 16,
+    "amount": 0.06
+  },
+  "scale_pool": [
+    "dorian",
+    "major",
+    "mixolydian"
+  ],
+  "section_density": {
+    "intro": 0.25,
+    "breakdown": 0.2,
+    "build": 0.55,
+    "drop": 0.8,
+    "drop2": 0.85,
+    "outro": 0.2
+  },
+  "section_velocity": {
+    "intro": 66,
+    "breakdown": 70,
+    "build": 84,
+    "drop": 96,
+    "drop2": 98,
+    "outro": 64
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Reese (Liquid)",
+      "preset": "reece_bass / smooth"
+    },
+    "lead": {
+      "label": "Lead - Smooth (Liquid)",
+      "preset": "saw_lead / soft"
+    },
+    "pad": {
+      "label": "Pad - Warm (Liquid)",
+      "preset": "warm_pad / lush"
+    },
+    "chord": {
+      "label": "Chord - Jazz (Liquid)",
+      "preset": "rhodes / electric_piano"
+    },
+    "arp": {
+      "label": "Arp - Pluck (Liquid)",
+      "preset": "pluck_synth / bright"
+    },
+    "drum": {
+      "label": "Drums - Breakbeat (Liquid)",
+      "preset": "dnb_kit / smooth"
+    }
+  }
+}

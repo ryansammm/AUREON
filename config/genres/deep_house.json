@@ -1,0 +1,43 @@
+{
+  "parent_genre": "house",
+  "genre": "deep_house",
+  "default_bpm": 122,
+  "swing": {
+    "resolution": 8,
+    "amount": 0.28
+  },
+  "scale_pool": [
+    "dorian",
+    "major",
+    "mixolydian"
+  ],
+  "section_velocity": {
+    "intro": 68,
+    "breakdown": 74,
+    "build": 84,
+    "drop": 94,
+    "outro": 66
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Deep (House)",
+      "preset": "sub_bass / analog"
+    },
+    "lead": {
+      "label": "Lead - Jazzy (Deep)",
+      "preset": "epiano / rhodes"
+    },
+    "pad": {
+      "label": "Pad - Warm (Deep)",
+      "preset": "warm_pad / soft"
+    },
+    "chord": {
+      "label": "Chord - Jazzy (Deep)",
+      "preset": "rhodes / electric_piano"
+    },
+    "drum": {
+      "label": "Drums - Deep House",
+      "preset": "deep_kit / 909"
+    }
+  }
+}

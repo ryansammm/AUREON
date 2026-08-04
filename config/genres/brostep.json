@@ -1,0 +1,43 @@
+{
+  "parent_genre": "dubstep",
+  "genre": "brostep",
+  "default_bpm": 140,
+  "swing": {
+    "resolution": 16,
+    "amount": 0.03
+  },
+  "section_density": {
+    "intro": 0.35,
+    "buildup": 0.7,
+    "drop": 1.0,
+    "breakdown": 0.2,
+    "drop2": 1.0,
+    "outro": 0.25
+  },
+  "section_velocity": {
+    "intro": 74,
+    "buildup": 92,
+    "drop": 112,
+    "breakdown": 78,
+    "drop2": 114,
+    "outro": 70
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Wobble (Brostep)",
+      "preset": "wobble_bass / growl"
+    },
+    "lead": {
+      "label": "Lead - Aggressive (Brostep)",
+      "preset": "lead_synth / distorted"
+    },
+    "pad": {
+      "label": "Pad - Scary (Brostep)",
+      "preset": "dark_pad / distorted"
+    },
+    "drum": {
+      "label": "Drums - Aggressive (Brostep)",
+      "preset": "dubstep_kit / distorted"
+    }
+  }
+}

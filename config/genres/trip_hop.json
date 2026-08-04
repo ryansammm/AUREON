@@ -1,0 +1,46 @@
+{
+  "parent_genre": "downtempo",
+  "genre": "trip_hop",
+  "default_bpm": 85,
+  "swing": {
+    "resolution": 8,
+    "amount": 0.35
+  },
+  "scale_pool": [
+    "natural_minor",
+    "dorian",
+    "phrygian"
+  ],
+  "section_velocity": {
+    "intro": 62,
+    "verse": 72,
+    "chorus": 80,
+    "outro": 58
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Upright (Trip Hop)",
+      "preset": "acoustic_bass / upright"
+    },
+    "lead": {
+      "label": "Lead - Sax (Trip Hop)",
+      "preset": "saxophone / tenor"
+    },
+    "pad": {
+      "label": "Pad - Vinyl (Trip Hop)",
+      "preset": "dark_pad / lofi"
+    },
+    "chord": {
+      "label": "Chord - Rhodes (Trip Hop)",
+      "preset": "rhodes / vintage"
+    },
+    "drum": {
+      "label": "Drums - Breakbeat (Trip Hop)",
+      "preset": "hiphop_kit / breakbeat"
+    },
+    "drum_layers": {
+      "label": "Percussion - Vinyl",
+      "preset": "vinyl_crackle / percussion"
+    }
+  }
+}

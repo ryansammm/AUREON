@@ -1,0 +1,54 @@
+{
+  "parent_genre": "downtempo",
+  "genre": "ambient",
+  "default_bpm": 90,
+  "swing": {
+    "resolution": 16,
+    "amount": 0.02
+  },
+  "scale_pool": [
+    "major",
+    "lydian",
+    "mixolydian"
+  ],
+  "section_bars": {
+    "intro": 4,
+    "verse": 8,
+    "chorus": 8,
+    "outro": 4
+  },
+  "section_density": {
+    "intro": 0.15,
+    "verse": 0.25,
+    "chorus": 0.5,
+    "outro": 0.1
+  },
+  "section_velocity": {
+    "intro": 52,
+    "verse": 62,
+    "chorus": 80,
+    "outro": 50
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Sub (Ambient)",
+      "preset": "sub_bass / sine"
+    },
+    "lead": {
+      "label": "Lead - Flute (Ambient)",
+      "preset": "flute / airy"
+    },
+    "pad": {
+      "label": "Pad - Ambient",
+      "preset": "ambient_pad / evolving"
+    },
+    "chord": {
+      "label": "Chord - Shimmer (Ambient)",
+      "preset": "shimmer_pad / reverb"
+    },
+    "drum": {
+      "label": "Drums - Sparse (Ambient)",
+      "preset": "ambient_kit / minimal"
+    }
+  }
+}

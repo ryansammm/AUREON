@@ -1,0 +1,53 @@
+{
+  "parent_genre": "future_bass",
+  "genre": "kawaii_future_bass",
+  "default_bpm": 160,
+  "swing": {
+    "resolution": 16,
+    "amount": 0.06
+  },
+  "scale_pool": [
+    "major",
+    "lydian"
+  ],
+  "section_density": {
+    "intro": 0.3,
+    "breakdown": 0.25,
+    "buildup": 0.6,
+    "drop": 0.85,
+    "outro": 0.25
+  },
+  "section_velocity": {
+    "intro": 72,
+    "breakdown": 76,
+    "buildup": 90,
+    "drop": 106,
+    "outro": 70
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Cute (Kawaii)",
+      "preset": "sine_bass / soft"
+    },
+    "lead": {
+      "label": "Lead - Chiptune (Kawaii)",
+      "preset": "chiptune / square"
+    },
+    "pad": {
+      "label": "Pad - Happy (Kawaii)",
+      "preset": "warm_pad / bright"
+    },
+    "arp": {
+      "label": "Arp - Bouncy (Kawaii)",
+      "preset": "pluck_synth / cute"
+    },
+    "chord": {
+      "label": "Chord - SuperSaw (Kawaii)",
+      "preset": "supersaw / bright"
+    },
+    "drum": {
+      "label": "Drums - Kawaii",
+      "preset": "kawaii_kit / 808"
+    }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "parent_genre": "future_bass",
+  "genre": "future_ghettotech",
+  "default_bpm": 140,
+  "swing": {
+    "resolution": 16,
+    "amount": 0.1
+  },
+  "scale_pool": [
+    "natural_minor",
+    "phrygian"
+  ],
+  "section_density": {
+    "intro": 0.35,
+    "breakdown": 0.3,
+    "buildup": 0.7,
+    "drop": 0.95,
+    "outro": 0.3
+  },
+  "section_velocity": {
+    "intro": 76,
+    "breakdown": 80,
+    "buildup": 92,
+    "drop": 108,
+    "outro": 74
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Heavy 808 (Ghetto)",
+      "preset": "808_bass / distorted"
+    },
+    "lead": {
+      "label": "Lead - Distorted (Ghetto)",
+      "preset": "lead_synth / distorted"
+    },
+    "pad": {
+      "label": "Pad - Dark (Ghetto)",
+      "preset": "dark_pad"
+    },
+    "drum": {
+      "label": "Drums - Ghetto Tech",
+      "preset": "ghetto_kit / distorted"
+    }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "parent_genre": "trap",
+  "genre": "drill",
+  "default_bpm": 140,
+  "swing": {
+    "resolution": 16,
+    "amount": 0.1
+  },
+  "scale_pool": [
+    "natural_minor",
+    "phrygian"
+  ],
+  "section_density": {
+    "intro": 0.3,
+    "breakdown": 0.5,
+    "buildup": 0.65,
+    "drop": 0.9,
+    "outro": 0.25
+  },
+  "section_velocity": {
+    "intro": 70,
+    "breakdown": 82,
+    "buildup": 88,
+    "drop": 100,
+    "outro": 66
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - 808 (Drill)",
+      "preset": "808_bass / distorted"
+    },
+    "lead": {
+      "label": "Lead - Pluck (Drill)",
+      "preset": "pluck_synth / dark"
+    },
+    "pad": {
+      "label": "Pad - Dark (Drill)",
+      "preset": "dark_pad / minimal"
+    },
+    "drum": {
+      "label": "Drums - Drill",
+      "preset": "drill_kit / trap"
+    }
+  }
+}

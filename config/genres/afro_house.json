@@ -1,0 +1,47 @@
+{
+  "parent_genre": "house",
+  "genre": "afro_house",
+  "default_bpm": 124,
+  "swing": {
+    "resolution": 8,
+    "amount": 0.32
+  },
+  "scale_pool": [
+    "dorian",
+    "mixolydian",
+    "major"
+  ],
+  "section_velocity": {
+    "intro": 70,
+    "breakdown": 76,
+    "build": 86,
+    "drop": 96,
+    "outro": 68
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Organic (Afro)",
+      "preset": "analog_bass / percussive"
+    },
+    "lead": {
+      "label": "Lead - Vocal Chop (Afro)",
+      "preset": "vocal_chop / percussive"
+    },
+    "pad": {
+      "label": "Pad - Warm (Afro)",
+      "preset": "warm_pad / organic"
+    },
+    "chord": {
+      "label": "Chord - Rhodes (Afro)",
+      "preset": "rhodes / warm"
+    },
+    "drum": {
+      "label": "Drums - Afro Percussion",
+      "preset": "afro_kit / percussion"
+    },
+    "drum_layers": {
+      "label": "Percussion - Afro",
+      "preset": "conga / bongo / shaker"
+    }
+  }
+}

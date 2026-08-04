@@ -57,6 +57,31 @@ def available_genres() -> list:
     return sorted(p.stem for p in CONFIG_DIR.glob("*.json"))
 
 
+def genre_groups() -> dict:
+    """Return {parent: [parent, sub1, sub2, ...]} for grouped UI."""
+    roots: dict[str, list[str]] = {}
+    children: dict[str, list[str]] = {}
+    all_genres = available_genres()
+    for name in all_genres:
+        path = CONFIG_DIR / f"{name}.json"
+        try:
+            raw = json.loads(path.read_text())
+        except Exception:
+            continue
+        parent = raw.get("parent_genre")
+        if parent and parent in all_genres:
+            children.setdefault(parent, []).append(name)
+        else:
+            roots.setdefault(name, [])
+    for parent, kids in children.items():
+        roots[parent].extend(sorted(kids))
+    all_in_groups = {g for group in roots.values() for g in group}
+    for name in all_genres:
+        if name not in all_in_groups:
+            roots[name] = []
+    return {k: v for k, v in sorted(roots.items())}
+
+
 def genre_defaults() -> dict:
     out = {}
     for genre in available_genres():
@@ -362,6 +387,7 @@ def _generate_payload(data: dict, report=None) -> dict:
 def api_config():
     return jsonify({
         "genres": available_genres(),
+        "genre_groups": genre_groups(),
         "genre_defaults": genre_defaults(),
         "roles": ROLES,
         "gain_defaults": GAIN_DEFAULTS,
@@ -369,6 +395,82 @@ def api_config():
 
 
 MAX_GENERATION_SECONDS = 300.0
+
+
+# ── Settings / .env management ────────────────────────────────────────
+
+ENV_PATH = ROOT / ".env"
+
+
+def _parse_env_file(path: Path) -> dict:
+    """Read a .env file into a dict (unquoted values, skip comments/blanks)."""
+    result = {}
+    if not path.exists():
+        return result
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key = key.strip()
+        value = value.strip().strip("\"'")
+        result[key] = value
+    return result
+
+
+def _write_env_file(path: Path, data: dict) -> None:
+    """Write a .env file preserving comments from the example template."""
+    example = ROOT / ".env.example"
+    header = ""
+    if example.exists():
+        header = example.read_text(encoding="utf-8")
+
+    lines = []
+    written_keys = set()
+    for line in header.splitlines():
+        stripped = line.strip()
+        if stripped and not stripped.startswith("#") and "=" in stripped:
+            key = stripped.split("=", 1)[0].strip()
+            if key in data:
+                lines.append(f"{key}={data[key]}")
+                written_keys.add(key)
+            else:
+                lines.append(f"{key}=")
+        else:
+            lines.append(line)
+
+    for key, value in data.items():
+        if key not in written_keys:
+            lines.append(f"{key}={value}")
+
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+@app.route("/api/settings", methods=["GET"])
+def api_settings_get():
+    env = _parse_env_file(ENV_PATH)
+    return jsonify({
+        "gemini_api_key": env.get("GEMINI_API_KEY", ""),
+        "groq_api_key": env.get("GROQ_API_KEY", ""),
+        "gemini_model": env.get("GEMINI_MODEL", ""),
+        "groq_model": env.get("GROQ_MODEL", ""),
+    })
+
+
+@app.route("/api/settings", methods=["POST"])
+def api_settings_post():
+    data = request.get_json(silent=True) or {}
+    env = _parse_env_file(ENV_PATH)
+
+    allowed_keys = {"GEMINI_API_KEY", "GROQ_API_KEY", "GEMINI_MODEL", "GROQ_MODEL"}
+    for key in allowed_keys:
+        if key in data:
+            env[key] = str(data[key])
+
+    _write_env_file(ENV_PATH, env)
+    return jsonify({"ok": True})
 
 
 @app.route("/api/generate", methods=["POST"])

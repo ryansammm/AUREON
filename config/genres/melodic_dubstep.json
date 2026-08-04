@@ -1,0 +1,51 @@
+{
+  "parent_genre": "dubstep",
+  "genre": "melodic_dubstep",
+  "default_bpm": 140,
+  "swing": {
+    "resolution": 16,
+    "amount": 0.06
+  },
+  "scale_pool": [
+    "natural_minor",
+    "major"
+  ],
+  "section_density": {
+    "intro": 0.3,
+    "buildup": 0.65,
+    "drop": 0.95,
+    "breakdown": 0.25,
+    "drop2": 0.95,
+    "outro": 0.3
+  },
+  "section_velocity": {
+    "intro": 68,
+    "buildup": 88,
+    "drop": 104,
+    "breakdown": 72,
+    "drop2": 106,
+    "outro": 66
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Reece (Melodic)",
+      "preset": "reece_bass / saw"
+    },
+    "lead": {
+      "label": "Lead - Supersaw (Melodic)",
+      "preset": "supersaw / detuned"
+    },
+    "pad": {
+      "label": "Pad - Ethereal (Melodic)",
+      "preset": "ethereal_pad / bright"
+    },
+    "arp": {
+      "label": "Arp - Emotional (Dubstep)",
+      "preset": "pluck_synth / emotional"
+    },
+    "drum": {
+      "label": "Drums - Half-Time (Melodic)",
+      "preset": "dubstep_kit / clean"
+    }
+  }
+}

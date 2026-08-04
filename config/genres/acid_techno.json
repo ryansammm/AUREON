@@ -1,0 +1,43 @@
+{
+  "parent_genre": "techno",
+  "genre": "acid_techno",
+  "default_bpm": 140,
+  "swing": {
+    "resolution": 16,
+    "amount": 0.08
+  },
+  "section_density": {
+    "intro": 0.4,
+    "breakdown": 0.3,
+    "build": 0.75,
+    "drop": 1.0,
+    "drop2": 1.0,
+    "outro": 0.35
+  },
+  "section_velocity": {
+    "intro": 78,
+    "breakdown": 82,
+    "build": 94,
+    "drop": 108,
+    "drop2": 108,
+    "outro": 74
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Acid 303 (Techno)",
+      "preset": "acid_bass / 303"
+    },
+    "lead": {
+      "label": "Lead - Acid Stab (Techno)",
+      "preset": "acid_synth / 303"
+    },
+    "pad": {
+      "label": "Pad - Distorted (Acid)",
+      "preset": "dark_pad / detuned"
+    },
+    "drum": {
+      "label": "Drums - Driving (Acid)",
+      "preset": "909_kit / distorted"
+    }
+  }
+}

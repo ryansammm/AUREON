@@ -163,8 +163,32 @@ export default function GeneratorView({ config, onGenerate, error, initial }) {
         {/* Genre */}
         <section>
           <Field label="Genre" hint={genre}>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {config.genres.map((g) => (
+            <div className="space-y-3">
+              {config.genre_groups && Object.entries(config.genre_groups).map(([parent, members]) => (
+                <div key={parent}>
+                  <div className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                    {parent.replace(/_/g, ' ')}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {members.map((g) => (
+                      <button
+                        key={g}
+                        onClick={() => setGenre(g)}
+                        className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                          genre === g
+                            ? 'border-[#ff7a1a] bg-[#ff7a1a]/15 text-[#ffb25e]'
+                            : g === parent
+                            ? 'glass text-slate-200 hover:border-white/25'
+                            : 'border-white/8 bg-white/3 text-slate-400 hover:border-white/20 hover:text-slate-200'
+                        }`}
+                      >
+                        {g.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {!config.genre_groups && config.genres.map((g) => (
                 <button
                   key={g}
                   onClick={() => setGenre(g)}

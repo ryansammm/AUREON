@@ -1,0 +1,50 @@
+{
+  "parent_genre": "trap",
+  "genre": "cloud_rap",
+  "default_bpm": 130,
+  "swing": {
+    "resolution": 16,
+    "amount": 0.08
+  },
+  "scale_pool": [
+    "major",
+    "dorian",
+    "mixolydian"
+  ],
+  "section_density": {
+    "intro": 0.2,
+    "breakdown": 0.4,
+    "buildup": 0.5,
+    "drop": 0.75,
+    "outro": 0.2
+  },
+  "section_velocity": {
+    "intro": 64,
+    "breakdown": 76,
+    "buildup": 82,
+    "drop": 92,
+    "outro": 62
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Soft 808 (Cloud)",
+      "preset": "808_bass / soft"
+    },
+    "lead": {
+      "label": "Lead - Ethereal (Cloud)",
+      "preset": "pluck_synth / ethereal"
+    },
+    "pad": {
+      "label": "Pad - Dreamy (Cloud)",
+      "preset": "warm_pad / dreamy"
+    },
+    "chord": {
+      "label": "Chord - Lofi (Cloud)",
+      "preset": "rhodes / filtered"
+    },
+    "drum": {
+      "label": "Drums - Cloud",
+      "preset": "trap_kit / soft"
+    }
+  }
+}

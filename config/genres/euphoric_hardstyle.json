@@ -1,0 +1,52 @@
+{
+  "parent_genre": "hardstyle",
+  "genre": "euphoric_hardstyle",
+  "default_bpm": 150,
+  "swing": {
+    "resolution": 16,
+    "amount": 0.03
+  },
+  "scale_pool": [
+    "major",
+    "dorian",
+    "natural_minor"
+  ],
+  "section_density": {
+    "intro": 0.35,
+    "breakdown": 0.25,
+    "build": 0.7,
+    "drop": 1.0,
+    "drop2": 1.0,
+    "outro": 0.3
+  },
+  "section_velocity": {
+    "intro": 74,
+    "breakdown": 78,
+    "build": 94,
+    "drop": 114,
+    "drop2": 114,
+    "outro": 72
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Offbeat (Euphoric)",
+      "preset": "saw_bass / offbeat"
+    },
+    "lead": {
+      "label": "Lead - Anthem (Euphoric)",
+      "preset": "supersaw / anthem"
+    },
+    "pad": {
+      "label": "Pad - Euphoric",
+      "preset": "ethereal_pad / bright"
+    },
+    "arp": {
+      "label": "Arp - Trance (Euphoric)",
+      "preset": "pluck_synth / euphoric"
+    },
+    "drum": {
+      "label": "Drums - Hard (Euphoric)",
+      "preset": "hardstyle_kit / clean"
+    }
+  }
+}

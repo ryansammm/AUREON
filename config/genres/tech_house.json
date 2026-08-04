@@ -1,0 +1,41 @@
+{
+  "parent_genre": "house",
+  "genre": "tech_house",
+  "default_bpm": 128,
+  "swing": {
+    "resolution": 8,
+    "amount": 0.18
+  },
+  "section_density": {
+    "intro": 0.35,
+    "breakdown": 0.3,
+    "build": 0.65,
+    "drop": 0.9,
+    "outro": 0.3
+  },
+  "section_velocity": {
+    "intro": 74,
+    "breakdown": 78,
+    "build": 90,
+    "drop": 102,
+    "outro": 72
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Rolling (Tech House)",
+      "preset": "analog_bass / percussive"
+    },
+    "lead": {
+      "label": "Lead - Stab (Tech House)",
+      "preset": "stab_synth / percussive"
+    },
+    "pad": {
+      "label": "Pad - Texture (Tech)",
+      "preset": "dark_pad / minimal"
+    },
+    "drum": {
+      "label": "Drums - Tech House 4x4",
+      "preset": "tech_house_kit / 909"
+    }
+  }
+}

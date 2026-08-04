@@ -1,0 +1,43 @@
+{
+  "parent_genre": "techno",
+  "genre": "detroit_techno",
+  "default_bpm": 130,
+  "swing": {
+    "resolution": 16,
+    "amount": 0.06
+  },
+  "scale_pool": [
+    "dorian",
+    "lydian"
+  ],
+  "section_velocity": {
+    "intro": 72,
+    "breakdown": 78,
+    "build": 88,
+    "drop": 100,
+    "drop2": 100,
+    "outro": 70
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Soul (Detroit)",
+      "preset": "fm_bass / analog"
+    },
+    "lead": {
+      "label": "Lead - Detroid (Techno)",
+      "preset": "lead_synth / saw"
+    },
+    "pad": {
+      "label": "Pad - Warm (Detroit)",
+      "preset": "warm_pad / strings"
+    },
+    "chord": {
+      "label": "Chord - Jazzy (Detroit)",
+      "preset": "rhodes / electric_piano"
+    },
+    "drum": {
+      "label": "Drums - Classic (Detroit)",
+      "preset": "909_kit"
+    }
+  }
+}

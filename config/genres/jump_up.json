@@ -1,0 +1,47 @@
+{
+  "parent_genre": "drum_and_bass",
+  "genre": "jump_up",
+  "default_bpm": 174,
+  "swing": {
+    "resolution": 16,
+    "amount": 0.03
+  },
+  "scale_pool": [
+    "natural_minor",
+    "phrygian"
+  ],
+  "section_density": {
+    "intro": 0.35,
+    "breakdown": 0.25,
+    "build": 0.7,
+    "drop": 1.0,
+    "drop2": 1.0,
+    "outro": 0.3
+  },
+  "section_velocity": {
+    "intro": 74,
+    "breakdown": 78,
+    "build": 94,
+    "drop": 112,
+    "drop2": 114,
+    "outro": 72
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Wobble (Jump Up)",
+      "preset": "wobble_bass / distorted"
+    },
+    "lead": {
+      "label": "Lead - Screech (Jump Up)",
+      "preset": "lead_synth / screech"
+    },
+    "pad": {
+      "label": "Pad - Dark (Jump Up)",
+      "preset": "dark_pad"
+    },
+    "drum": {
+      "label": "Drums - Punchy (Jump Up)",
+      "preset": "dnb_kit / punchy"
+    }
+  }
+}

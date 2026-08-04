@@ -1,0 +1,49 @@
+{
+  "parent_genre": "uk_garage",
+  "genre": "speed_garage",
+  "default_bpm": 134,
+  "swing": {
+    "resolution": 8,
+    "amount": 0.3
+  },
+  "scale_pool": [
+    "dorian",
+    "mixolydian"
+  ],
+  "section_density": {
+    "intro": 0.3,
+    "breakdown": 0.25,
+    "build": 0.65,
+    "drop": 0.9,
+    "outro": 0.25
+  },
+  "section_velocity": {
+    "intro": 72,
+    "breakdown": 76,
+    "build": 88,
+    "drop": 100,
+    "outro": 70
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Reese (Speed)",
+      "preset": "reece_bass / dark"
+    },
+    "lead": {
+      "label": "Lead - Vocal (Speed)",
+      "preset": "vocal_chop / pitched"
+    },
+    "pad": {
+      "label": "Pad - Dark (Speed)",
+      "preset": "dark_pad / warm"
+    },
+    "chord": {
+      "label": "Chord - Stab (Speed)",
+      "preset": "chord_stab / percussive"
+    },
+    "drum": {
+      "label": "Drums - Speed Garage",
+      "preset": "ukg_kit / shuffled"
+    }
+  }
+}

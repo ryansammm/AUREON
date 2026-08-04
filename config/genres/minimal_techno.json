@@ -1,0 +1,43 @@
+{
+  "parent_genre": "techno",
+  "genre": "minimal_techno",
+  "default_bpm": 128,
+  "swing": {
+    "resolution": 16,
+    "amount": 0.03
+  },
+  "section_density": {
+    "intro": 0.2,
+    "breakdown": 0.25,
+    "build": 0.55,
+    "drop": 0.8,
+    "drop2": 0.8,
+    "outro": 0.25
+  },
+  "section_velocity": {
+    "intro": 68,
+    "breakdown": 72,
+    "build": 85,
+    "drop": 96,
+    "drop2": 96,
+    "outro": 66
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Minimal (Techno)",
+      "preset": "sub_bass / sine"
+    },
+    "lead": {
+      "label": "Lead - Minimal (Techno)",
+      "preset": "pluck_synth"
+    },
+    "pad": {
+      "label": "Pad - Texture (Minimal)",
+      "preset": "dark_pad"
+    },
+    "drum": {
+      "label": "Drums - Minimal (Techno)",
+      "preset": "909_kit"
+    }
+  }
+}

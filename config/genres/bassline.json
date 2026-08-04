@@ -1,0 +1,49 @@
+{
+  "parent_genre": "uk_garage",
+  "genre": "bassline",
+  "default_bpm": 130,
+  "swing": {
+    "resolution": 8,
+    "amount": 0.35
+  },
+  "scale_pool": [
+    "dorian",
+    "major"
+  ],
+  "section_density": {
+    "intro": 0.3,
+    "breakdown": 0.25,
+    "build": 0.6,
+    "drop": 0.85,
+    "outro": 0.25
+  },
+  "section_velocity": {
+    "intro": 70,
+    "breakdown": 74,
+    "build": 86,
+    "drop": 98,
+    "outro": 68
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Wobbly (Bassline)",
+      "preset": "analog_bass / wobble"
+    },
+    "lead": {
+      "label": "Lead - Pluck (Bassline)",
+      "preset": "pluck_synth / percussive"
+    },
+    "pad": {
+      "label": "Pad - Warm (Bassline)",
+      "preset": "warm_pad / soft"
+    },
+    "chord": {
+      "label": "Chord - Organ (Bassline)",
+      "preset": "organ / house"
+    },
+    "drum": {
+      "label": "Drums - Bassline 4x4",
+      "preset": "ukg_kit / 4x4"
+    }
+  }
+}

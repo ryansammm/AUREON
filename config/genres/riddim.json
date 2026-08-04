@@ -1,0 +1,39 @@
+{
+  "parent_genre": "dubstep",
+  "genre": "riddim",
+  "default_bpm": 140,
+  "swing": {
+    "resolution": 16,
+    "amount": 0.05
+  },
+  "scale_pool": [
+    "natural_minor",
+    "phrygian"
+  ],
+  "section_density": {
+    "intro": 0.25,
+    "buildup": 0.5,
+    "drop": 1.0,
+    "breakdown": 0.15,
+    "drop2": 1.0,
+    "outro": 0.2
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Metallic (Riddim)",
+      "preset": "riddim_bass / metallic"
+    },
+    "lead": {
+      "label": "Lead - Minimal (Riddim)",
+      "preset": "pluck_synth / minimal"
+    },
+    "pad": {
+      "label": "Pad - Dark (Riddim)",
+      "preset": "dark_pad / sparse"
+    },
+    "drum": {
+      "label": "Drums - Half-Time (Riddim)",
+      "preset": "dubstep_kit / punchy"
+    }
+  }
+}

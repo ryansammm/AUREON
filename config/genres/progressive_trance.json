@@ -1,0 +1,59 @@
+{
+  "parent_genre": "trance",
+  "genre": "progressive_trance",
+  "default_bpm": 132,
+  "swing": {
+    "resolution": 16,
+    "amount": 0.04
+  },
+  "section_template": [
+    "intro",
+    "breakdown",
+    "build",
+    "drop",
+    "drop2",
+    "outro"
+  ],
+  "section_bars": {
+    "intro": 4,
+    "breakdown": 4,
+    "build": 4,
+    "drop": 8,
+    "drop2": 8,
+    "outro": 4
+  },
+  "section_density": {
+    "intro": 0.2,
+    "breakdown": 0.25,
+    "build": 0.55,
+    "drop": 0.8,
+    "drop2": 0.85,
+    "outro": 0.2
+  },
+  "section_velocity": {
+    "intro": 68,
+    "breakdown": 72,
+    "build": 88,
+    "drop": 100,
+    "drop2": 102,
+    "outro": 66
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Rolling (Progressive)",
+      "preset": "analog_bass / rolling"
+    },
+    "lead": {
+      "label": "Lead - Melodic (Progressive)",
+      "preset": "saw_lead / pluck"
+    },
+    "pad": {
+      "label": "Pad - Ethereal (Progressive)",
+      "preset": "ethereal_pad / warm"
+    },
+    "drum": {
+      "label": "Drums - Progressive",
+      "preset": "progressive_kit / 909"
+    }
+  }
+}

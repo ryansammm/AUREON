@@ -1,0 +1,47 @@
+{
+  "parent_genre": "trance",
+  "genre": "uplifting_trance",
+  "default_bpm": 140,
+  "swing": {
+    "resolution": 16,
+    "amount": 0.04
+  },
+  "section_density": {
+    "intro": 0.3,
+    "breakdown": 0.25,
+    "build": 0.7,
+    "drop": 1.0,
+    "drop2": 1.0,
+    "outro": 0.25
+  },
+  "section_velocity": {
+    "intro": 72,
+    "breakdown": 76,
+    "build": 92,
+    "drop": 110,
+    "drop2": 110,
+    "outro": 68
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Offbeat (Uplifting)",
+      "preset": "saw_bass / offbeat"
+    },
+    "lead": {
+      "label": "Lead - Supersaw (Uplifting)",
+      "preset": "supersaw / detuned"
+    },
+    "pad": {
+      "label": "Pad - Anthem (Uplifting)",
+      "preset": "anthem_pad / bright"
+    },
+    "arp": {
+      "label": "Arp - Euphoric (Trance)",
+      "preset": "pluck_synth / euphoric"
+    },
+    "drum": {
+      "label": "Drums - Uplifting 4x4",
+      "preset": "trance_kit / 909"
+    }
+  }
+}

@@ -157,12 +157,21 @@ def validate_genre_config(config) -> bool:
 
 
 def load_genre_config(genre: str, config_dir: Path = None) -> dict:
-    """Load and validate a genre config, falling back to ``generic``."""
+    """Load and validate a genre config, falling back to ``generic``.
+
+    If a config contains ``parent_genre``, it inherits all keys from the
+    parent and only overrides specified fields.  Override keys are merged
+    recursively for dicts and replaced outright for other types.
+    """
     config_dir = config_dir or CONFIG_DIR
     path = Path(config_dir) / f"{genre}.json"
     try:
         with open(path, encoding="utf-8") as fh:
             config = json.load(fh)
+        parent_name = config.get("parent_genre")
+        if parent_name:
+            parent = load_genre_config(parent_name, config_dir)
+            config = _merge_overrides(parent, config)
         validate_genre_config(config)
         return config
     except FileNotFoundError:
@@ -180,3 +189,22 @@ def load_genre_config(genre: str, config_dir: Path = None) -> dict:
             genre, exc, FALLBACK_GENRE,
         )
     return load_genre_config(FALLBACK_GENRE, config_dir)
+
+
+def _merge_overrides(parent: dict, child: dict) -> dict:
+    """Merge *child* onto *parent*.  Keys not in child come from parent.
+
+    - ``parent_genre`` is removed from the result (it was only used to
+      select the parent).
+    - Dict values are merged recursively.
+    - All other types (list, int, str, …) are replaced outright.
+    """
+    result = dict(parent)
+    for key, value in child.items():
+        if key == "parent_genre":
+            continue
+        if isinstance(value, dict) and isinstance(result.get(key), dict):
+            result[key] = _merge_overrides(result[key], value)
+        else:
+            result[key] = value
+    return result

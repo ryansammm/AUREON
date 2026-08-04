@@ -1,0 +1,48 @@
+{
+  "parent_genre": "drum_and_bass",
+  "genre": "neurofunk",
+  "default_bpm": 174,
+  "swing": {
+    "resolution": 16,
+    "amount": 0.04
+  },
+  "scale_pool": [
+    "phrygian",
+    "natural_minor",
+    "harmonic_minor"
+  ],
+  "section_density": {
+    "intro": 0.3,
+    "breakdown": 0.2,
+    "build": 0.65,
+    "drop": 1.0,
+    "drop2": 1.0,
+    "outro": 0.25
+  },
+  "section_velocity": {
+    "intro": 72,
+    "breakdown": 76,
+    "build": 90,
+    "drop": 108,
+    "drop2": 110,
+    "outro": 68
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Neuro (Funk)",
+      "preset": "neuro_bass / distorted"
+    },
+    "lead": {
+      "label": "Lead - Tech (Neuro)",
+      "preset": "lead_synth / distorted"
+    },
+    "pad": {
+      "label": "Pad - Dark (Neuro)",
+      "preset": "dark_pad / evolving"
+    },
+    "drum": {
+      "label": "Drums - Tight (Neurofunk)",
+      "preset": "dnb_kit / tight"
+    }
+  }
+}

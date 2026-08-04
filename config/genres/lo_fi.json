@@ -1,0 +1,46 @@
+{
+  "parent_genre": "downtempo",
+  "genre": "lo_fi",
+  "default_bpm": 80,
+  "swing": {
+    "resolution": 8,
+    "amount": 0.4
+  },
+  "scale_pool": [
+    "major",
+    "dorian",
+    "mixolydian"
+  ],
+  "section_velocity": {
+    "intro": 58,
+    "verse": 68,
+    "chorus": 76,
+    "outro": 56
+  },
+  "instrument_intent": {
+    "bass": {
+      "label": "Bass - Soft (Lo-Fi)",
+      "preset": "sub_bass / sine"
+    },
+    "lead": {
+      "label": "Lead - Piano (Lo-Fi)",
+      "preset": "piano / felt"
+    },
+    "pad": {
+      "label": "Pad - Nostalgic (Lo-Fi)",
+      "preset": "warm_pad / filtered"
+    },
+    "chord": {
+      "label": "Chord - Jazz (Lo-Fi)",
+      "preset": "rhodes / lofi"
+    },
+    "drum": {
+      "label": "Drums - Lo-Fi",
+      "preset": "lofi_kit / dusty"
+    },
+    "drum_layers": {
+      "label": "Percussion - Lo-Fi",
+      "preset": "vinyl_crackle"
+    }
+  }
+}

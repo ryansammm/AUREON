@@ -84,6 +84,18 @@ export default function GeneratorView({ config, onGenerate, error, initial }) {
   const [genre, setGenre] = useState(initial?.genre || config.genres[0])
   const def = config.genre_defaults[genre] || { bpm: 140, key: 'a', mode: 'minor' }
 
+  const groups = config.genre_groups || {}
+  const groupKeys = Object.keys(groups)
+
+  const [expanded, setExpanded] = useState(() => {
+    const s = new Set()
+    const g = initial?.genre || config.genres[0]
+    for (const [key, members] of Object.entries(groups)) {
+      if (members.includes(g)) s.add(key)
+    }
+    return s
+  })
+
   const [roles, setRoles] = useState(initial?.roles || ['bass', 'lead', 'drum'])
   const [key, setKey] = useState(initial?.key || def.key)
   const [mode, setMode] = useState(initial?.mode || def.mode)
@@ -99,7 +111,7 @@ export default function GeneratorView({ config, onGenerate, error, initial }) {
 
   const applyParams = (p) => {
     if (!p) return
-    if (config.genres.includes(p.genre)) setGenre(p.genre)
+    if (config.genres.includes(p.genre)) selectGenre(p.genre)
     if (Array.isArray(p.roles)) setRoles(p.roles.filter((r) => config.roles.includes(r)))
     if (typeof p.key === 'string') setKey(p.key)
     if (p.mode === 'minor' || p.mode === 'major') setMode(p.mode)
@@ -112,6 +124,31 @@ export default function GeneratorView({ config, onGenerate, error, initial }) {
     if (typeof p.ai === 'boolean') setAi(p.ai)
     if (typeof p.prompt === 'string') setPrompt(p.prompt)
   }
+
+  function selectGenre(g) {
+    setGenre(g)
+    for (const [key, members] of Object.entries(groups)) {
+      if (members.includes(g)) {
+        setExpanded((prev) => (prev.has(key) ? prev : new Set([...prev, key])))
+        break
+      }
+    }
+  }
+
+  const toggleGroup = (key) =>
+    setExpanded((prev) => {
+      const n = new Set(prev)
+      if (n.has(key)) n.delete(key)
+      else n.add(key)
+      return n
+    })
+
+  const allExpanded = groupKeys.length > 0 && expanded.size === groupKeys.length
+  const toggleAll = () =>
+    setExpanded(allExpanded ? new Set() : new Set(groupKeys))
+
+  const groupLabel = (key) =>
+    key.startsWith('_') ? 'More genres' : key.replace(/_/g, ' ')
 
   function loadProjectFile(e) {
     const file = e.target.files?.[0]
@@ -162,36 +199,75 @@ export default function GeneratorView({ config, onGenerate, error, initial }) {
       <div className="space-y-8">
         {/* Genre */}
         <section>
-          <Field label="Genre" hint={genre}>
-            <div className="space-y-3">
-              {config.genre_groups && Object.entries(config.genre_groups).map(([parent, members]) => (
-                <div key={parent}>
-                  <div className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                    {parent.replace(/_/g, ' ')}
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {members.map((g) => (
-                      <button
-                        key={g}
-                        onClick={() => setGenre(g)}
-                        className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
-                          genre === g
-                            ? 'border-[#ff7a1a] bg-[#ff7a1a]/15 text-[#ffb25e]'
-                            : g === parent
-                            ? 'glass text-slate-200 hover:border-white/25'
-                            : 'border-white/8 bg-white/3 text-slate-400 hover:border-white/20 hover:text-slate-200'
-                        }`}
-                      >
-                        {g.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-                      </button>
-                    ))}
-                  </div>
+          <Field label="Genre" hint={genre.replace(/_/g, ' ')}>
+            <div className="space-y-2">
+              {config.genre_groups && groupKeys.length > 1 && (
+                <div className="flex justify-end">
+                  <button
+                    className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 transition hover:text-[#ffb25e]"
+                    onClick={toggleAll}
+                  >
+                    {allExpanded ? 'Collapse all ▴' : 'Expand all ▾'}
+                  </button>
                 </div>
-              ))}
+              )}
+              {config.genre_groups && groupKeys.map((group) => {
+                const members = groups[group]
+                const isOpen = expanded.has(group)
+                return (
+                  <div
+                    key={group}
+                    className={`overflow-hidden rounded-xl border transition ${
+                      isOpen ? 'border-white/15 bg-white/[0.03]' : 'border-white/8 bg-white/[0.02]'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between gap-2 px-3 py-2"
+                      onClick={() => toggleGroup(group)}
+                    >
+                      <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                        {groupLabel(group)}
+                      </span>
+                      <span className="flex items-center gap-2 text-[11px] tabular-nums text-slate-500">
+                        {members.length} genres
+                        <span
+                          className={`inline-block text-slate-400 transition-transform ${
+                            isOpen ? 'rotate-180' : ''
+                          }`}
+                        >
+                          ▾
+                        </span>
+                      </span>
+                    </button>
+                    {isOpen && (
+                      <div className="flex flex-wrap gap-1.5 px-3 pb-3 pt-1">
+                        {members.map((g) => (
+                          <button
+                            key={g}
+                            type="button"
+                            onClick={() => selectGenre(g)}
+                            className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                              genre === g
+                                ? 'border-[#ff7a1a] bg-[#ff7a1a]/15 text-[#ffb25e]'
+                                : g === group
+                                ? 'glass text-slate-200 hover:border-white/25'
+                                : 'border-white/8 bg-white/3 text-slate-400 hover:border-white/20 hover:text-slate-200'
+                            }`}
+                          >
+                            {g.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
               {!config.genre_groups && config.genres.map((g) => (
                 <button
                   key={g}
-                  onClick={() => setGenre(g)}
+                  type="button"
+                  onClick={() => selectGenre(g)}
                   className={`rounded-lg border px-3 py-2.5 text-sm font-semibold transition ${
                     genre === g
                       ? 'border-[#ff7a1a] bg-[#ff7a1a]/15 text-[#ffb25e]'

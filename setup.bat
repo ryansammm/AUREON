@@ -1,16 +1,16 @@
 @echo off
 setlocal enabledelayedexpansion
-title AUREON — First-Time Setup
+title AUREON - First-Time Setup
 cd /d "%~dp0"
 
 echo ============================================
-echo   AUREON — First-Time Setup
+echo   AUREON - First-Time Setup
 echo ============================================
 echo.
 
 set "HAS_ERROR=0"
 
-:: ── 1. Python ──────────────────────────────────
+:: -- 1. Python ----------------------------------
 echo [1/5] Checking Python...
 python --version >nul 2>&1
 if !errorlevel! neq 0 (
@@ -35,7 +35,7 @@ if !errorlevel! neq 0 (
 )
 :skip_python
 
-:: ── 2. Node.js ─────────────────────────────────
+:: -- 2. Node.js ---------------------------------
 echo.
 echo [2/5] Checking Node.js...
 node --version >nul 2>&1
@@ -61,7 +61,7 @@ if !errorlevel! neq 0 (
 )
 :skip_node
 
-:: ── 3. Python venv + pip ──────────────────────
+:: -- 3. Python venv + pip ----------------------
 echo.
 echo [3/5] Checking Python virtual environment...
 if not exist ".venv\Scripts\python.exe" (
@@ -84,7 +84,7 @@ if !errorlevel! neq 0 (
 )
 :skip_venv
 
-:: ── 4. npm install ────────────────────────────
+:: -- 4. npm install ----------------------------
 echo.
 echo [4/5] Checking frontend dependencies...
 if not exist "web\frontend\node_modules" (
@@ -102,7 +102,7 @@ if not exist "web\frontend\node_modules" (
     echo   [OK] node_modules already present
 )
 
-:: ── 5. Frontend build ─────────────────────────
+:: -- 5. Frontend build -------------------------
 echo.
 echo [5/5] Building frontend...
 if not exist "web\frontend\dist\index.html" (
@@ -119,7 +119,7 @@ if not exist "web\frontend\dist\index.html" (
     echo   [OK] dist/ already present
 )
 
-:: ── .env check ────────────────────────────────
+:: -- .env check --------------------------------
 echo.
 if not exist ".env" (
     if exist ".env.example" (
@@ -132,7 +132,7 @@ if not exist ".env" (
     echo   [OK] .env found
 )
 
-:: ── Summary ───────────────────────────────────
+:: -- Summary -----------------------------------
 echo.
 echo ============================================
 if "!HAS_ERROR!"=="0" (

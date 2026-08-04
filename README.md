@@ -153,10 +153,39 @@ python web\app.py
 ### Dev Server Control
 
 ```powershell
-.\scripts\dev.ps1 -Status     # server state + orphans
-.\scripts\dev.ps1 -Restart    # kill all, rebuild, start
-.\scripts\dev.ps1 -Stop       # stop everything
-.\scripts\dev.ps1 -Logs       # tail server logs
+.\scripts\dev.ps1 -Status            # server + watchdog state, port, orphans
+.\scripts\dev.ps1 -Restart           # kill all, rebuild, start
+.\scripts\dev.ps1 -Stop              # stop server + watchdog + orphans
+.\scripts\dev.ps1 -Logs              # tail watchdog + server logs
+.\scripts\dev.ps1 -Watch             # start self-healing watchdog in background
+.\scripts\dev.ps1 -WatchForeground   # run watchdog in foreground (Ctrl+C stops)
+.\scripts\dev.ps1 -Hot               # with -Watch: restart on backend/frontend source change
+.\scripts\dev.ps1 -AutoStart         # register logon auto-start task (admin may be needed)
+.\scripts\dev.ps1 -NoAutoStart       # remove the logon auto-start task
+```
+
+### Supervision / Auto-Heal (watchdog)
+
+`scripts\watchdog.py` is a permanent supervisor that keeps AUREON running
+smoothly. It is launched automatically by `AUREON.bat` and by
+`dev.ps1 -Watch`, and it:
+
+- health-checks the server every 10s (TCP probe + `GET /api/config`)
+- auto-restarts after 3 consecutive failures, with backoff if the server
+  is crash-looping
+- cleans orphaned processes (FluidSynth, stale python servers, stray Vite)
+- rotates `server.out.log` / `server.err.log` / `watchdog.log` (keeps 3 × 1 MB)
+- `--hot`: restarts when `web/engine/tools` sources change
+- `--once`: single check-and-fix — drop this into a Windows Scheduled Task
+  for a second layer of self-healing
+- writes `server.status.json` (read by `dev.ps1 -Status`) and a PID lockfile
+  so only one watchdog runs
+
+```powershell
+# Manual watchdog control
+.\scripts\dev.ps1 -Watch                # background (production-style)
+.\scripts\dev.ps1 -WatchForeground -Hot # foreground + auto-reload sources
+python scripts\watchdog.py --once       # single check-and-fix, exit code 0/1
 ```
 
 ### Smoke Test

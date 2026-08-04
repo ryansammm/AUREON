@@ -58,28 +58,31 @@ def available_genres() -> list:
 
 
 def genre_groups() -> dict:
-    """Return {parent: [parent, sub1, sub2, ...]} for grouped UI."""
-    roots: dict[str, list[str]] = {}
+    """Return {parent: [parent, sub1, sub2, ...]} for grouped UI.
+
+    Parents with children get their own group. Parentless genres without
+    children are grouped under the special key "_solo" ("More genres").
+    """
+    all_genres = set(available_genres())
     children: dict[str, list[str]] = {}
-    all_genres = available_genres()
+    roots: list[str] = []
     for name in all_genres:
-        path = CONFIG_DIR / f"{name}.json"
         try:
-            raw = json.loads(path.read_text())
+            raw = json.loads((CONFIG_DIR / f"{name}.json").read_text())
         except Exception:
             continue
         parent = raw.get("parent_genre")
         if parent and parent in all_genres:
             children.setdefault(parent, []).append(name)
         else:
-            roots.setdefault(name, [])
-    for parent, kids in children.items():
-        roots[parent].extend(sorted(kids))
-    all_in_groups = {g for group in roots.values() for g in group}
-    for name in all_genres:
-        if name not in all_in_groups:
-            roots[name] = []
-    return {k: v for k, v in sorted(roots.items())}
+            roots.append(name)
+    groups: dict[str, list[str]] = {}
+    for parent, kids in sorted(children.items()):
+        groups[parent] = [parent] + sorted(kids)
+    solo = sorted(r for r in roots if r not in children)
+    if solo:
+        groups["_solo"] = solo
+    return groups
 
 
 def genre_defaults() -> dict:
@@ -765,4 +768,5 @@ def spa(path):
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=8000, debug=False)
+    port = int(os.environ.get("AUREON_PORT", "8000"))
+    app.run(host="127.0.0.1", port=port, debug=False)

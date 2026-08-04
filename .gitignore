@@ -29,3 +29,5 @@ web/frontend/dist/
 logs/
 server.*.log
 *.log
+server.status.json
+watchdog.lock

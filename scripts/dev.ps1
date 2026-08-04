@@ -1,17 +1,27 @@
 # AUREON dev server control. Usage (PowerShell):
-#   .\scripts\dev.ps1 -Status     show server state
-#   .\scripts\dev.ps1 -Start      (re)build frontend, start server, wait healthy
-#   .\scripts\dev.ps1 -Dev        start Flask + Vite dev server (HMR on :5173)
-#   .\scripts\dev.ps1 -Restart    stop everything, then Start
-#   .\scripts\dev.ps1 -Stop       stop server + orphaned fluidsynth
-#   .\scripts\dev.ps1 -Logs       tail server output
+#   .\scripts\dev.ps1 -Status            show server / watchdog / port state
+#   .\scripts\dev.ps1 -Start             (re)build frontend, start server, wait healthy
+#   .\scripts\dev.ps1 -Restart           stop everything, then Start
+#   .\scripts\dev.ps1 -Stop              stop server + watchdog + orphans
+#   .\scripts\dev.ps1 -Logs              tail server output
+#   .\scripts\dev.ps1 -Watch             start the watchdog in the background (self-healing)
+#   .\scripts\dev.ps1 -WatchForeground   run the watchdog in the foreground (Ctrl+C stops)
+#   .\scripts\dev.ps1 -Dev               start Flask + Vite dev server (HMR on :5173)
+#   .\scripts\dev.ps1 -Hot               (with -Watch / -WatchForeground) restart on source change
+#   .\scripts\dev.ps1 -AutoStart         register scheduled task to start AUREON at logon
+#   .\scripts\dev.ps1 -NoAutoStart       remove the logon scheduled task
 param(
     [switch]$Status,
     [switch]$Start,
     [switch]$Dev,
     [switch]$Restart,
     [switch]$Stop,
-    [switch]$Logs
+    [switch]$Logs,
+    [switch]$Watch,
+    [switch]$WatchForeground,
+    [switch]$Hot,
+    [switch]$AutoStart,
+    [switch]$NoAutoStart
 )
 
 $ErrorActionPreference = "Stop"
@@ -21,6 +31,10 @@ $port = 8000
 function Get-ServerPids {
     Get-CimInstance Win32_Process -Filter "Name='python.exe'" -ErrorAction SilentlyContinue |
         Where-Object { $_.CommandLine -match 'web[\\/]app\.py' }
+}
+function Get-WatchdogPids {
+    Get-CimInstance Win32_Process -Filter "Name='python.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -match 'watchdog\.py' }
 }
 function Get-FluidsynthPids {
     Get-Process -Name "fluidsynth*" -ErrorAction SilentlyContinue
@@ -32,8 +46,56 @@ function Get-VitePids {
 function Test-PortFree {
     -not (Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue)
 }
+function Test-Healthy {
+    try {
+        $r = Invoke-WebRequest -Uri "http://127.0.0.1:$port/api/config" -UseBasicParsing -TimeoutSec 3
+        return $r.StatusCode -eq 200
+    } catch { return $false }
+}
+
+# Launch a process fully detached from the caller's console. Launching the
+# server via Start-Process inherits the console, so the calling cmd/PowerShell
+# window waits for the server to exit before returning the prompt ("hang").
+# Win32_Process.Create spawns it under WMI with its own console instead.
+function Start-Detached([string]$CommandLine) {
+    Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $CommandLine } |
+        Out-Null
+}
+
+function Get-Python {
+    $py = Join-Path $root ".venv\Scripts\python.exe"
+    if (Test-Path $py) { return $py }
+    return "python"
+}
+
+function Start-Server {
+    $py = Get-Python
+    $out = Join-Path $root "server.out.log"
+    $err = Join-Path $root "server.err.log"
+    $cmd = "cmd.exe /c cd /d `"$root`" && `"$py`" web\app.py > `"$out`" 2> `"$err`""
+    Start-Detached $cmd
+}
+
+function Start-Vite {
+    $out = Join-Path $root "vite.out.log"
+    $err = Join-Path $root "vite.err.log"
+    $fe = Join-Path $root "web\frontend"
+    $cmd = "cmd.exe /c cd /d `"$fe`" && npm run dev > `"$out`" 2> `"$err`""
+    Start-Detached $cmd
+}
+
+function Start-Watchdog {
+    $py = Get-Python
+    $out = Join-Path $root "watchdog.out.log"
+    $flags = ""
+    if ($Dev) { $flags += " --dev" }
+    if ($Hot) { $flags += " --hot" }
+    $cmd = "cmd.exe /c cd /d `"$root`" && `"$py`" scripts\watchdog.py$flags > `"$out`" 2>&1"
+    Start-Detached $cmd
+}
 
 function Stop-All {
+    foreach ($p in Get-WatchdogPids) { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }
     foreach ($p in Get-ServerPids) { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }
     foreach ($p in Get-FluidsynthPids) { Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }
     foreach ($p in Get-VitePids) { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }
@@ -48,33 +110,107 @@ function Stop-All {
 
 if ($Status) {
     $srv = Get-ServerPids
-    if ($srv) { "server: RUNNING (pid $($srv.ProcessId -join ','))" }
-    else { "server: stopped" }
-    if (Test-PortFree) { "port $port : free" } else { "port $port : IN USE" }
+    $wd = Get-WatchdogPids
+    $statusFile = Join-Path $root "server.status.json"
+    if ($srv) { "server:      RUNNING (pid $($srv.ProcessId -join ','))" }
+    else { "server:      stopped" }
+    if ($wd) { "watchdog:    RUNNING (pid $($wd.ProcessId -join ','))" }
+    else { "watchdog:    stopped" }
+    if (Test-Path $statusFile) {
+        $j = Get-Content $statusFile -Raw | ConvertFrom-Json
+        "last state:  $($j.state) ($($j.detail)) - checks $($j.checks), restarts $($j.restarts)"
+    }
+    if (Test-PortFree) { "port $port :  free" } else { "port $port :  IN USE" }
     $fs = Get-FluidsynthPids
-    if ($fs) { "fluidsynth orphans: $($fs.Id -join ',')" } else { "fluidsynth orphans: none" }
+    if ($fs) { "fluidsynth:   orphans: $($fs.Id -join ',')" } else { "fluidsynth:   none" }
     $vite = Get-VitePids
-    if ($vite) { "vite dev server: RUNNING (pid $($vite.ProcessId -join ','))" } else { "vite dev server: stopped" }
+    if ($vite) { "vite:        RUNNING (pid $($vite.ProcessId -join ','))" } else { "vite:        stopped" }
     exit 0
 }
 
 if ($Stop) {
     Stop-All
-    "stopped. port free: $(Test-PortFree)"
+    "stopped server, watchdog + orphans. port free: $(Test-PortFree)"
     exit 0
+}
+
+if ($Logs) {
+    Get-Content (Join-Path $root "watchdog.log") -Tail 20 -ErrorAction SilentlyContinue
+    Get-Content (Join-Path $root "server.out.log") -Tail 20 -ErrorAction SilentlyContinue
+    Get-Content (Join-Path $root "server.err.log") -Tail 20 -ErrorAction SilentlyContinue
+    exit 0
+}
+
+if ($WatchForeground) {
+    Stop-All
+    $py = Get-Python
+    $wdArgs = @()
+    if ($Dev) { $wdArgs += "--dev" }
+    if ($Hot) { $wdArgs += "--hot" }
+    "watchdog FOREGROUND (Ctrl+C to stop)..."
+    & $py scripts\watchdog.py @wdArgs
+    exit $LASTEXITCODE
+}
+
+if ($Watch) {
+    Stop-All
+    Start-Watchdog
+    "starting watchdog (background, self-healing)..."
+    $deadline = (Get-Date).AddSeconds(60)
+    while ((Get-Date) -lt $deadline) {
+        Start-Sleep -Milliseconds 1000
+        if (Test-Healthy) {
+            "server UP on 127.0.0.1:$port (watchdog active)"
+            exit 0
+        }
+    }
+    Write-Error "server did not become healthy in 60s; see watchdog.log"
+    exit 1
+}
+
+if ($AutoStart) {
+    $task = "AUREON Watchdog"
+    $bootstrap = Join-Path $root "scripts\watchdog-onlogon.cmd"
+    if (-not (Test-Path $bootstrap)) {
+        Write-Error "bootstrap missing: $bootstrap"; exit 1
+    }
+    $registered = $false
+    try {
+        $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$bootstrap`""
+        $trigger = New-ScheduledTaskTrigger -AtLogOn
+        $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 0) -StartWhenAvailable
+        Register-ScheduledTask -TaskName $task -Action $action -Trigger $trigger -Settings $settings -Force -ErrorAction Stop | Out-Null
+        $registered = $true
+    } catch {
+        schtasks /Create /TN $task /TR "`"$bootstrap`"" /SC ONLOGON /RL LIMITED /F 2>$null | Out-Null
+        if ($LASTEXITCODE -eq 0) { $registered = $true }
+    }
+    if ($registered) {
+        "registered scheduled task '$task' (starts AUREON at logon)"
+        exit 0
+    }
+    Write-Error "could not register '$task'. Run this once as Administrator, or start AUREON manually (AUREON.bat)."
+    exit 1
+}
+
+if ($NoAutoStart) {
+    try {
+        Unregister-ScheduledTask -TaskName "AUREON Watchdog" -Confirm:$false -ErrorAction Stop
+        "removed scheduled task 'AUREON Watchdog'"
+        exit 0
+    } catch {
+        schtasks /Delete /TN "AUREON Watchdog" /F 2>$null | Out-Null
+        if ($LASTEXITCODE -eq 0) { "removed scheduled task 'AUREON Watchdog'"; exit 0 }
+    }
+    Write-Error "could not remove the scheduled task. Run as Administrator if needed."
+    exit 1
 }
 
 if ($Dev) {
     Stop-All
     "starting dev mode (Flask :$port + Vite HMR :5173)..."
 
-    $py = Join-Path $root ".venv\Scripts\python.exe"
-    if (-not (Test-Path $py)) { $py = "python" }
-
-    Start-Process -FilePath $py -ArgumentList "web\app.py" -WorkingDirectory $root `
-        -WindowStyle Hidden `
-        -RedirectStandardOutput (Join-Path $root "server.out.log") `
-        -RedirectStandardError (Join-Path $root "server.err.log")
+    Start-Server
 
     $deadline = (Get-Date).AddSeconds(30)
     while ((Get-Date) -lt $deadline) {
@@ -86,10 +222,7 @@ if ($Dev) {
     }
     "Flask UP on :$port"
 
-    Push-Location (Join-Path $root "web\frontend")
-    Start-Process -FilePath "npm" -ArgumentList "run dev" -WorkingDirectory (Join-Path $root "web\frontend") `
-        -WindowStyle Hidden
-    Pop-Location
+    Start-Vite
 
     $deadline2 = (Get-Date).AddSeconds(20)
     while ((Get-Date) -lt $deadline2) {
@@ -100,13 +233,7 @@ if ($Dev) {
         Write-Error "Vite dev server failed to start on port 5173"; exit 1
     }
     "Vite HMR UP on :5173"
-    "open http://localhost:5173 — changes in src/ appear instantly"
-    exit 0
-}
-
-if ($Logs) {
-    Get-Content (Join-Path $root "server.out.log") -Tail 30 -ErrorAction SilentlyContinue
-    Get-Content (Join-Path $root "server.err.log") -Tail 30 -ErrorAction SilentlyContinue
+    "open http://localhost:5173 - changes in src/ appear instantly"
     exit 0
 }
 
@@ -117,7 +244,7 @@ if ($Restart) {
 }
 
 if (-not $Start) {
-    Write-Host "no switch given; use -Status / -Start / -Dev / -Restart / -Stop / -Logs"
+    Write-Host "no switch given; use -Status / -Start / -Restart / -Stop / -Watch / -WatchForeground / -Dev / -AutoStart / -NoAutoStart"
     exit 1
 }
 
@@ -136,13 +263,7 @@ if (Test-Path (Join-Path $root "web\frontend\package.json")) {
     "skipping frontend build (no package.json)"
 }
 
-$py = Join-Path $root ".venv\Scripts\python.exe"
-if (-not (Test-Path $py)) { $py = "python" }
-
-Start-Process -FilePath $py -ArgumentList "web\app.py" -WorkingDirectory $root `
-    -WindowStyle Hidden `
-    -RedirectStandardOutput (Join-Path $root "server.out.log") `
-    -RedirectStandardError (Join-Path $root "server.err.log")
+Start-Server
 
 $deadline = (Get-Date).AddSeconds(30)
 while ((Get-Date) -lt $deadline) {

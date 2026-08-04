@@ -1,66 +1,90 @@
-# AUREON — Advanced MIDI Composition Engine
+# Aureon by XYKS — AI Music Generator
 
 Rule-based MIDI composition engine that generates genre-aware, multi-track
 music (bass, leads, arps, chords, pads, drums) with arrangement structure,
-humanized timing and MIDI export. 100% local and free/open-source.
+humanized timing and MIDI export. 15 parent genres + 26 sub-genres, 10
+instrument roles, real GM SoundFont rendering. 100% local and free/open-source.
 
-Optional **AI layer (Phase 5)** — the engine can ask a free-tier LLM (Gemini
-→ Groq fallback) for creative ideas (progression + motif) and to re-score
-candidate rankings. No key = fully rule-based; nothing ever leaves your
-machine except the single prompt to the LLM you opt into.
+Optional **AI layer** — the engine can ask a free-tier LLM (Gemini → Groq
+fallback) for creative ideas (progression + motif) and to re-score candidate
+rankings. No key = fully rule-based; nothing ever leaves your machine except
+the single prompt to the LLM you opt into.
 
-Generated MIDI opens in any DAW (Ableton, FL Studio, Logic, Cubase). A
-numpy-based WAV renderer is included so you can listen to results without
-a synth or soundfont.
+## Quick Start (New Users)
+
+```bat
+:: 1. Clone the repo
+git clone https://github.com/anomalyco/aureon.git
+cd aureon
+
+:: 2. Run setup — checks Python, Node.js, installs all dependencies
+setup.bat
+
+:: 3. Start Aureon
+AUREON.bat
+:: Opens http://127.0.0.1:8000 automatically
+```
+
+`setup.bat` will:
+- Check Python 3.10+ and Node.js 18+ (offer install via winget if missing)
+- Create virtual environment + install pip packages
+- Install npm packages + build the frontend
+- Create `.env` from `.env.example`
+
+`AUREON.bat` will:
+- Verify all dependencies are present
+- Auto-build frontend if needed
+- Warn if no API keys are set (AI features require at least one key)
+- Start the server and open your browser
+
+### API Keys (Optional)
+
+AI features (smart suggestions, scoring) need at least one free API key:
+
+| Provider | Free tier | Get key |
+|----------|-----------|---------|
+| Gemini | ~1500 req/day | https://aistudio.google.com/app/apikey |
+| Groq | ~1000 req/day | https://console.groq.com/keys |
+
+Add keys via the **Settings** page in the app, or edit `.env` directly.
 
 ## Features
 
-- **Genre configs** — 15 built-in genres (`techno`, `trance`,
-  `progressive_house`, `big_room`, `electro_house`, `house`, `dubstep`,
-  `drum_and_bass`, `trap`, `future_bass`, `hardstyle`, `psytrance`,
-  `uk_garage`, `downtempo`, `generic`); extensible — add a JSON file.
+- **41 genres** — 15 parent genres (`techno`, `trance`, `house`, `dubstep`,
+  `drum_and_bass`, `trap`, `future_bass`, `hardstyle`, `uk_garage`,
+  `downtempo`, `psytrance`, `progressive_house`, `big_room`, `electro_house`,
+  `generic`) + 26 sub-genres with genre-specific BPM, patterns, swing, and
+  arrangement. Sub-genres inherit from parents via `parent_genre` config.
 - **Multi-track composition** — shared arrangement + chord progression across
   `bass`, `sub_bass`, `lead`, `counter_lead`, `arp`, `stab`, `chord`/`pad`,
   `drum` and `drum_layers` roles with register separation.
 - **Arrangement & energy curve** — intro / buildup / breakdown / drop / outro
   with per-section density, register, velocity and tempo; long requests
-  (up to ~280 bars / ~5 min) expand into repeated build-up/drop loops with
-  a single intro and outro instead of blindly re-tiling the template.
-- **Layer 4 candidate selection** — generates N variations and ranks them with an
-  ensemble score: theory heuristics (dissonance, repetition, voice leading) plus
-  statistical features (tonality in-key rate, chord-tone alignment, pitch variety,
-  density balance, register adherence).
-- **AI assistance (optional)** — Gemini/Groq `LLMIdeator` suggests a chord
-  progression + melodic motif (validated to the scale), and an `AIScorer`
-  re-ranks candidates with musical reasoning. Both composable with the
-  rule-based stack; provider chain falls back automatically.
-- **Humanization** — micro-timing, velocity arcs, and per-genre **swing/groove**.
-- **MIDI automation** — CC 74 (filter cutoff) + CC 11 (expression) follow the
-  energy curve; percussion on channel 10; mid-song **tempo map**; section
-  **modulations** (e.g. key lift on the second drop).
-- **God-tier web UI** — React + Vite + Tailwind SPA served by a small Flask
-  REST API: genre/role picker with live summary, real-time **SSE generation
-  progress**, waveform player, interactive **piano roll** (pan/zoom/hover),
-  candidate **A/B audio compare** with AI reasoning.
-- **Per-track stems & mixer** — stereo WAV stems per role plus a browser
-  **mixer** (volume / mute / solo per stem); **per-track MIDI download**
-  (`/api/track/<file>?role=...`).
-- **History & compare** — every generation is saved locally (localStorage);
-  open old compositions, or **compare two** side by side with differences
-  highlighted. Projects can be **saved/loaded as JSON**.
-- **GM MIDI import** — upload a `.mid` and AUREON reads Program Change +
-  channel (channel 10 = drums) and auto-assigns internal role/presets from
-  the **General MIDI patch & drum maps**, with manual per-track override and
-  non-GM-compliance warnings.
-- **WAV render** — stereo synthesis with per-role panning, drum voices and
-  reverb; **all melodic layers preview as a piano voice** (drums keep their
-  kit timbre) for a readable mix, while the MIDI export embeds **GM Program
-  Changes** (drums on channel 10) so a DAW import auto-loads the right
-  instruments; plus a metrics report per track/section.
+  (up to ~280 bars / ~5 min) expand into repeated build-up/drop loops.
+- **Layer 4 candidate selection** — generates N variations and ranks them with
+  an ensemble score: theory heuristics + statistical features.
+- **AI assistance (optional)** — Gemini/Groq `LLMIdeator` suggests chord
+  progressions + melodic motifs, and `AIScorer` re-ranks candidates.
+- **Humanization** — micro-timing, velocity arcs, per-genre swing/groove.
+  Drums keep velocity humanization but skip timing humanization.
+- **MIDI automation** — CC 74 + CC 11, percussion on channel 10, tempo map,
+  section modulations.
+- **Web UI** — React + Vite + Tailwind SPA with:
+  - Grouped genre selector (parent → sub-genres)
+  - Live SSE generation progress
+  - Waveform player + interactive piano roll
+  - Candidate A/B audio compare with AI reasoning
+  - Per-track stems & browser mixer
+  - History, compare, MIDI import
+  - **Settings page** — manage API keys without touching `.env`
+- **PWA** — installable with offline shell, plays compositions in the browser
+  with real GM instruments via Tone.js + SoundFont-player.
+- **WAV render** — FluidSynth + GeneralUser GS SoundFont, with numpy fallback.
+  Master chain: sidechain duck → compression → saturation → limiter.
 
-## Install
+## Install (Manual)
 
-Python 3.11+.
+Python 3.10+, Node.js 18+.
 
 ```bash
 python -m venv .venv
@@ -68,150 +92,89 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Dependencies: `music21`, `mido`, `pytest`, `numpy` (for the WAV render),
-`flask` (for the web UI).
-
-The web UI additionally needs Node.js 18+ (only for building the SPA):
-
 ```bash
 cd web\frontend
 npm install
-npm run build                  # outputs web/frontend/dist (optional if you use `npm run dev`)
+npm run build
 ```
 
-## CLI usage
+## CLI Usage
 
 ```bash
 # single track
 python cli.py --genre dubstep --role bass --key a --mode minor --bpm 140
-```
 
-```bash
-# multi-track composition with drums, ranked from 5 candidates
+# multi-track with drums, ranked from 5 candidates
 python cli.py --genre house --roles bass,lead,chord,drum --candidates 5 --top 1
 
 # full 10-role composition
 python cli.py --genre dubstep --roles bass,sub_bass,lead,arp,stab,counter_lead,chord,pad,drum,drum_layers
 
-# long-form composition (~5 min at 140 BPM)
+# long-form (~5 min at 140 BPM)
 python cli.py --genre dubstep --roles bass,lead,chord,drum --bars 180
 
-# disable humanization for A/B comparison
-python cli.py --genre dubstep --role bass --no-humanize
+# sub-genre
+python cli.py --genre liquid_dnb --roles bass,lead,chord,drum
 
-# metrics report
-python cli.py --genre dubstep --roles bass,lead,chord,drum --report
-
-# render exported MIDI to WAV (stereo + reverb)
-python cli.py --genre dubstep --role bass --render
-
-# Phase 5: let Gemini/Groq design the progression + motif
+# Phase 5: AI ideation
 python cli.py --genre dubstep --roles bass,lead,chord,drum --ai \
     --prompt "dark, cinematic with an emotional lead"
-
-# Phase 5: AI also re-ranks the candidates (needs --candidates > 1)
-python cli.py --genre dubstep --roles bass,lead,chord,drum --candidates 5 \
-    --ai --ai-score --top 1
 ```
-
-Output goes to the current directory (or `--output path.mid`); samples are
-kept under `output/`.
-
-## Listen (WAV render)
-
-```bash
-python tools\render_audio.py output\sample.mid
-python tools\render_audio.py output\sample.mid --gain 0.6 --no-reverb
-```
-
-Timbre is a basic synth — enough to judge melody, progression, arrangement
-and the humanizer's micro-timing.
 
 ## Web UI
 
-Flask is now a **REST JSON API** that also serves the built React SPA from
-`web/frontend/dist`:
+Flask serves a REST JSON API + the built React SPA from `web/frontend/dist`:
 
 | Endpoint | Purpose |
 |----------|---------|
-| `GET  /api/config` | genres + defaults, roles, gain defaults |
-| `POST /api/generate` | generate + rank a composition (JSON body) |
-| `POST /api/generate/stream` | same, but streams SSE progress (`step`/`result`/`error`) |
-| `GET  /api/track/<file>?role=` | download a single-role MIDI stem (omit `role` = main MIDI) |
-| `POST /api/import/midi` | upload `.mid` → GM-mapped channel report (multipart `file`) |
-| `GET  /api/export/<file>` | **ZIP bundle**: master + stems + candidates (MIDI & WAV), project.json, README |
+| `GET  /api/config` | genres + groups, defaults, roles, gains |
+| `GET  /api/settings` | read API keys from `.env` |
+| `POST /api/settings` | write API keys to `.env` |
+| `POST /api/generate` | generate + rank a composition |
+| `POST /api/generate/stream` | SSE progress stream (`step`/`result`/`error`) |
+| `GET  /api/track/<file>?role=` | download a single-role MIDI stem |
+| `POST /api/import/midi` | upload `.mid` → GM-mapped channel report |
+| `GET  /api/export/<file>` | ZIP bundle: master + stems + project.json |
 | `GET  /play/<file>` | stream a rendered WAV |
 | `GET  /download/<file>` | download a MIDI/WAV file |
 
 ```bash
-# 1. build the SPA once (after install)
-cd web\frontend && npm install && npm run build
-
-# 2. run the app (serves UI + API on the same port)
 python web\app.py
 # open http://127.0.0.1:8000
 ```
 
-During development use the Vite dev server (hot reload) instead of the build —
-it proxies `/api` to Flask on port 8000:
-
-```bash
-# terminal 1                       # terminal 2
-python web\app.py                  cd web\frontend && npm run dev
-```
-
-Binds to `127.0.0.1` only. Do not expose to a public network without adding
-authentication.
-
-### Audio rendering & mastering
-
-The master WAV is rendered with a **real General MIDI SoundFont** (FluidSynth +
-GeneralUser GS, from `D:\DevTools`) when available, with a numpy piano-synth
-fallback. Full mixes go through a **master chain** (kick sidechain-duck →
-glue compression → saturation → limiter); stems are dry + normalized so the
-browser mixer stays clean. Env overrides: `AUREON_FLUIDSYNTH`,
-`AUREON_SOUNDFONT` (set `AUREON_SOUNDFONT=0` to force the numpy renderer).
-
-### PWA & browser playback
-
-The SPA is installable (manifest + icons + service worker, offline shell) and
-plays compositions **in the browser** with real GM instruments via Tone.js +
-SoundFont-player (lazy-loaded; drums on channel 10, PolySynth fallback).
-
-### Dev server control (no more stuck ports / stale processes)
+### Dev Mode (HMR)
 
 ```powershell
-scripts\dev.ps1 -Status     # is the server up? orphans?
-scripts\dev.ps1 -Restart    # kill all instances + orphan fluidsynth, rebuild, start
-scripts\dev.ps1 -Stop       # stop everything
-scripts\dev.ps1 -Logs       # tail server logs
+.\scripts\dev.ps1 -Dev     # Flask :8000 + Vite :5173 paralel
+# open http://localhost:5173 — changes in src/ appear instantly
 ```
 
-End-to-end smoke check (never hangs — every socket has a timeout and the SSE
-stream is watchdog-bounded):
+### Dev Server Control
+
+```powershell
+.\scripts\dev.ps1 -Status     # server state + orphans
+.\scripts\dev.ps1 -Restart    # kill all, rebuild, start
+.\scripts\dev.ps1 -Stop       # stop everything
+.\scripts\dev.ps1 -Logs       # tail server logs
+```
+
+### Smoke Test
 
 ```bash
 python tools\smoke_test.py
 ```
 
-## AI layer (optional, Phase 5)
+## AI Layer (Optional)
 
-Copy `.env.example` → `.env` and add at least one key:
-
-| Provider | Model | Free tier | Where to get it |
-|----------|-------|-----------|-----------------|
-| Gemini | `gemini-flash-latest` | ~1500 req/day | https://aistudio.google.com/app/apikey |
-| Groq | `llama-3.3-70b-versatile` | ~1000 req/day | https://console.groq.com/keys |
-
-Gemini is tried first; on failure the client falls back to Groq
-automatically. With no key the engine stays 100% rule-based. In the UI,
-flip the **AI assistance** toggle to send a vibe prompt and enable AI
-ideation + AI re-scoring of candidates.
+Copy `.env.example` → `.env` and add at least one key, or use the Settings
+page in the app. Gemini is tried first; on failure falls back to Groq.
+With no key the engine stays 100% rule-based.
 
 ## Tests
 
 ```bash
-python -m pytest -q     # 161 tests; --timeout=120 is always on via pytest.ini
+python -m pytest -q     # --timeout=120 always on via pytest.ini
 ```
 
 ## Architecture
@@ -220,46 +183,40 @@ Layer-based pipeline (`engine/`), each layer independently testable:
 
 | Layer | Module | Responsibility |
 |-------|--------|----------------|
-| 0 | `config_loader.py` | genre config load/validate (fallback to `generic`) |
+| 0 | `config_loader.py` | genre config load/validate + `parent_genre` inheritance |
 | 1 | `harmony.py` | chord progression (weighted pool + transition matrix) |
 | 2 | `melody.py` / `drums.py` | bass/lead lines, chord voicings, drum patterns |
 | 3 | `arrangement.py` | section plan + energy curve |
 | 4 | `selector.py` | candidate generation + ensemble scoring |
 | 5 | `humanizer.py` | micro-timing, velocity, swing |
 | 6 | `exporter.py` | Type-1 multi-track MIDI, CC, tempo map |
-| — | `pipeline.py` | wires 0→6; multi-role composition; CC/tempo/modulation |
+| — | `pipeline.py` | wires 0→6; multi-role composition |
 | — | `metrics.py` | per-track/section stats report |
-| — | `llm.py` | Gemini/Groq provider chain + JSON extraction (Phase 5) |
-| — | `ideation.py` | `LLMIdeator` — AI chord progression + motif, validated |
-| — | `ai_scorer.py` | `AIScorer` — AI re-ranking of candidates (Phase 5) |
-| — | `gm_map.py` (`tools/`) | GM patch/drum maps + MIDI Program Change parser → internal role/preset mapping |
-| — | `sf_render.py` (`tools/`) | optional FluidSynth + GM SoundFont renderer (`render_midi_with_soundfont`, `filter_midi_roles`) |
-| — | `render_audio.py` (`tools/`) | stereo WAV render + **master chain** (`apply_master_chain`, `normalize_stem`) |
+| — | `llm.py` | Gemini/Groq provider chain + JSON extraction |
+| — | `ideation.py` | `LLMIdeator` — AI chord progression + motif |
+| — | `ai_scorer.py` | `AIScorer` — AI re-ranking of candidates |
+| — | `gm_map.py` | GM patch/drum maps + MIDI Program Change parser |
+| — | `sf_render.py` | FluidSynth + GM SoundFont renderer |
+| — | `render_audio.py` | stereo WAV render + master chain |
 
-Genre configs live in `config/genres/*.json`. A genre is fully defined by
-config — no engine code changes needed.
+### Sub-genre Inheritance
 
-## Configuration highlights
+Sub-genre configs use `parent_genre` to inherit all keys from the parent and
+only override specific fields (BPM, swing, patterns, instrument labels, etc.):
 
 ```jsonc
+// config/genres/acid_techno.json
 {
+  "parent_genre": "techno",
+  "genre": "acid_techno",
   "default_bpm": 140,
-  "section_template": ["intro", "buildup", "drop", "breakdown", "drop2", "outro"],
-  "section_tempo": {"breakdown": 0.5},                       // mid-song tempo change
-  "modulations": [{"section": "drop2", "semitones": 1}],     // key lift
-  "automation": {"cc74_range": [30, 125], "cc11": true},     // CC automation
-  "swing": {"resolution": 16, "amount": 0.12},               // groove
-  "drum_patterns": {                                          // 16-step strings
-    "notes": {"kick": 36, "snare": 38, "hat": 42},
-    "patterns": {"drop": {"kick": "x...........x...", "snare": "........x......."}},
-    "layers": {"drop": {"shaker": ".x.x.x.x.x.x.x.x", "tom": "..............x."}}
+  "swing": {"resolution": 16, "amount": 0.08},
+  "instrument_intent": {
+    "bass": {"label": "Bass - Acid 303 (Techno)", "preset": "acid_bass / 303"}
   }
 }
 ```
 
-Genre knowledge is curated in `tools/gen_genre_kb.py` and regenerated into
-`config/genres/*.json` with:
+## License
 
-```bash
-python tools\gen_genre_kb.py
-```
+Developed by XYKS.

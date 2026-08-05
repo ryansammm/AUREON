@@ -57,12 +57,17 @@ function Test-Healthy {
 # server via Start-Process inherits the console, so the calling cmd/PowerShell
 # window waits for the server to exit before returning the prompt ("hang").
 # Win32_Process.Create spawns it under WMI with its own console instead.
+# NOTE: shell execution (UseShellExecute=$true) on purpose — it does NOT pass
+# the caller's stdout/stderr handles to the child, so a long-running server
+# cannot keep the invoking shell's output pipe open. With UseShellExecute=$false
+# the child inherits those handles, which makes agent/tool sessions that capture
+# stdout hang forever waiting for EOF (see AGENTS.md).
 function Start-Detached([string]$CommandLine) {
     $psi = New-Object System.Diagnostics.ProcessStartInfo
     $psi.FileName = "cmd.exe"
     $psi.Arguments = "/c $CommandLine"
-    $psi.CreateNoWindow = $true
-    $psi.UseShellExecute = $false
+    $psi.UseShellExecute = $true
+    $psi.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Hidden
     [System.Diagnostics.Process]::Start($psi) | Out-Null
 }
 
@@ -158,6 +163,10 @@ if ($WatchForeground) {
 
 if ($Watch) {
     Stop-All
+    # Per AGENTS.md, -Watch supervises the full dev stack (Flask + Vite HMR):
+    # the watchdog starts both, restarts them if they die, and this call
+    # returns control immediately once Flask is healthy.
+    $Dev = $true
     Start-Watchdog
     "starting watchdog (background, self-healing)..."
     $deadline = (Get-Date).AddSeconds(60)

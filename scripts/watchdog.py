@@ -184,6 +184,10 @@ def cleanup_on_exit() -> None:
 # ── spawning ───────────────────────────────────────────────────────────
 
 def spawn(cmd: list[str], cwd: Path, out_log: Path, err_log: Path, env: dict | None = None) -> None:
+    if os.name == "nt" and cmd and not cmd[0].lower().endswith(".exe"):
+        # Windows can't exec a bare command shim (npm = npm.cmd) directly;
+        # route through cmd.exe so .cmd/.bat shims resolve like a shell.
+        cmd = ["cmd.exe", "/c", *cmd]
     out_f = open(out_log, "ab", buffering=0)
     err_f = open(err_log, "ab", buffering=0)
     full = dict(os.environ)

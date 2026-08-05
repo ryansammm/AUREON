@@ -17,6 +17,9 @@ venv/
 output/*
 !output/.gitkeep
 
+# Docker volume backup (generated audio saved before Docker removal)
+output_docker_backup/
+
 # Frontend build artifacts
 node_modules/
 web/frontend/node_modules/

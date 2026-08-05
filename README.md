@@ -212,7 +212,7 @@ one and restarting mid-generation.
 
 ```powershell
 # Manual watchdog control
-.\scripts\dev.ps1 -Watch                # background (production-style)
+.\scripts\dev.ps1 -Watch                # background (Flask + Vite dev, self-healing)
 .\scripts\dev.ps1 -WatchForeground -Hot # foreground + auto-reload sources
 python scripts\watchdog.py --once       # single check-and-fix, exit code 0/1
 ```
@@ -228,30 +228,6 @@ python tools\smoke_test.py
 Copy `.env.example` → `.env` and add at least one key, or use the Settings
 page in the app. Gemini is tried first; on failure falls back to Groq.
 With no key the engine stays 100% rule-based.
-
-## Docker
-
-Run the full stack in a container (Flask server + built SPA):
-
-```bash
-docker compose up -d --build
-# open http://127.0.0.1:8000
-```
-
-- `./.env` is bind-mounted into the container at `/aureon/.env`, so API keys
-  written via the Settings page persist across container restarts and rebuilds.
-- The image bundles **GeneralUser GS** (the documented default SoundFont) at
-  `/aureon/soundfonts/GeneralUser.sf2` and sets `AUREON_SOUNDFONT` to it, so
-  Docker-rendered audio matches a native setup. FluidR3_GM is also installed
-  as a fallback if you override `AUREON_SOUNDFONT`.
-- The app runs as a **non-root user** (UID 1000). The `output/` dir and the
-  mounted `./.env` are writable by that user; on native Linux hosts, ensure
-  your host `.env` is writable by UID 1000 (Docker Desktop bind mounts are
-  writable regardless). If upgrading from an older image that ran as root,
-  remove the old volume once so it is re-created with the new ownership:
-  `docker compose down -v && docker compose up -d`.
-- Generated output is stored in the named `aureon-output` volume.
-- `restart: unless-stopped` keeps the server running after reboots.
 
 ## Tests
 

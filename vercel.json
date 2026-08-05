@@ -1,0 +1,25 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "outputDirectory": "web/frontend/dist",
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "${BACKEND_URL}/api/$1",
+      "env": ["BACKEND_URL"]
+    },
+    {
+      "src": "/play/(.*)",
+      "dest": "${BACKEND_URL}/play/$1",
+      "env": ["BACKEND_URL"]
+    },
+    {
+      "src": "/download/(.*)",
+      "dest": "${BACKEND_URL}/download/$1",
+      "env": ["BACKEND_URL"]
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}

@@ -182,6 +182,38 @@ python web\app.py
 .\scripts\dev.ps1 -NoAutoStart       # remove the logon auto-start task
 ```
 
+### Deploy the Frontend to Vercel
+
+The repo ships Vercel-ready config: a root `package.json` builds the React
+frontend and `vercel.json` points Vercel at the build output and at the
+backend. The Flask backend is **not** deployed to Vercel — it is a long-running
+threaded server that renders with FluidSynth and writes files to disk — so it
+must run on a machine Vercel can reach (VPS, home server, Railway, Fly.io).
+
+1. Push `main` (the branch Vercel deploys).
+2. Import the repo in Vercel — it auto-detects the root `package.json`
+   (`npm run build` → installs `web/frontend` deps + `vite build`).
+3. Add a `BACKEND_URL` environment variable in the Vercel project settings
+   pointing at your public backend origin, e.g. `https://aureon-backend.example.com`
+   (no trailing slash).
+4. Deploy.
+
+`vercel.json` routes:
+- `/api/*`, `/play/*`, `/download/*` are proxied to `${BACKEND_URL}` (expanded at
+  request time — change the backend without rebuilding).
+- every other path rewrites to `index.html` for SPA client-side routing; static
+  assets are served from the CDN before routes are applied.
+
+Expose the backend publicly (it binds to 127.0.0.1 by default):
+
+```powershell
+$env:AUREON_HOST = "0.0.0.0"
+python web\app.py
+```
+
+Local dev is unchanged: the Vite dev server already proxies `/api`, `/play`,
+`/download` to the Flask backend on :8000 (`web/frontend/vite.config.js`).
+
 ### Supervision / Auto-Heal (watchdog)
 
 `scripts\watchdog.py` is a permanent supervisor that keeps AUREON running

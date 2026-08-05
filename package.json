@@ -1,0 +1,14 @@
+{
+  "name": "aureon",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AUREON by XYKS — AI music generator. Root package so Vercel builds the React frontend in web/frontend; the Flask backend runs elsewhere.",
+  "scripts": {
+    "build": "npm --prefix web/frontend ci && npm --prefix web/frontend run build",
+    "dev": "npm --prefix web/frontend run dev",
+    "preview": "npm --prefix web/frontend run preview"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

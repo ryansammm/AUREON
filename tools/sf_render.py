@@ -1,18 +1,22 @@
 """Optional server-side SoundFont rendering via FluidSynth.
 
-Renders a .mid with a real General MIDI SoundFont (default: GeneralUser GS in
-``D:\\DevTools\\soundfonts``) instead of the numpy piano-synth preview. The
-master render still goes through the numpy ``apply_master_chain`` (sidechain
-duck + glue + limiter); stems are level-normalized so the mixer keeps a
-clean, dry signal.
+Renders a .mid with a real General MIDI SoundFont (e.g. GeneralUser GS) instead
+of the numpy piano-synth preview. The master render still goes through the
+numpy ``apply_master_chain`` (sidechain duck + glue + limiter); stems are
+level-normalized so the mixer keeps a clean, dry signal.
 
 Falls back cleanly (returns ``None``) whenever the FluidSynth binary or a
-SoundFont cannot be found, so the app never breaks without them.
+SoundFont cannot be found, so the app never breaks without them. A warning is
+logged with the missing piece and the env var that fixes it.
 
-Locations can be overridden with the env vars ``AUREON_FLUIDSYNTH`` and
-``AUREON_SOUNDFONT``; set ``AUREON_SOUNDFONT=0`` to force the numpy renderer.
+Locations are resolved in order:
+  1. ``AUREON_FLUIDSYNTH`` / ``AUREON_SOUNDFONT`` env vars (if set)
+  2. ``fluidsynth`` on ``PATH``
+  3. a small set of common cross-platform install locations
+Set ``AUREON_SOUNDFONT=0`` to force the numpy renderer.
 """
 
+import logging
 import os
 import shutil
 import subprocess
@@ -31,10 +35,26 @@ from render_audio import (
     track_role,
 )
 
-_DEFAULT_BIN = Path(
-    r"D:\DevTools\fluidsynth\fluidsynth-v2.5.7-win10-x64-glib\bin\fluidsynth.exe"
-)
-_SF_DIR = Path(r"D:\DevTools\soundfonts")
+log = logging.getLogger(__name__)
+
+# Common cross-platform install locations (no personal dev-machine paths).
+_COMMON_BINS = [
+    Path("/usr/bin/fluidsynth"),
+    Path("/usr/local/bin/fluidsynth"),
+    Path("/opt/homebrew/bin/fluidsynth"),  # macOS Apple Silicon
+    Path("/opt/local/bin/fluidsynth"),  # macOS MacPorts
+    Path(r"C:\Program Files\FluidSynth\bin\fluidsynth.exe"),
+    Path(r"C:\Program Files (x86)\FluidSynth\bin\fluidsynth.exe"),
+    Path(os.environ.get("LOCALAPPDATA", "")) / r"Programs\fluidsynth\bin\fluidsynth.exe",
+]
+
+# Common SoundFont directories, checked for *.sf2 / *.sf3.
+_COMMON_SF_DIRS = [
+    Path("/usr/share/sounds/sf2"),
+    Path("/usr/share/sounds/sf3"),
+    Path("/usr/share/sounds"),
+    Path("/Library/Audio/Sounds/Banks"),  # macOS
+]
 
 
 def _find_binary() -> Path | None:
@@ -43,10 +63,14 @@ def _find_binary() -> Path | None:
         p = Path(env)
         if p.is_file():
             return p
-    if _DEFAULT_BIN.is_file():
-        return _DEFAULT_BIN
+        log.warning("AUREON_FLUIDSYNTH=%r does not point to a file; ignoring", env)
     found = shutil.which("fluidsynth")
-    return Path(found) if found else None
+    if found:
+        return Path(found)
+    for p in _COMMON_BINS:
+        if p.is_file():
+            return p
+    return None
 
 
 def _find_soundfont() -> Path | None:
@@ -55,18 +79,60 @@ def _find_soundfont() -> Path | None:
         p = Path(env)
         if p.is_file():
             return p
-    if _SF_DIR.is_dir():
-        for pattern in ("*.sf2", "*.sf3"):
-            hits = sorted(_SF_DIR.glob(pattern))
-            if hits:
-                return hits[0]
+        log.warning("AUREON_SOUNDFONT=%r does not point to a file; ignoring", env)
+    for base in _COMMON_SF_DIRS:
+        if base.is_dir():
+            for pattern in ("*.sf2", "*.sf3"):
+                hits = sorted(base.glob(pattern))
+                if hits:
+                    return hits[0]
     return None
 
 
+def renderer_status() -> dict:
+    """Report which renderer is available and what pieces are missing."""
+    binary = _find_binary()
+    soundfont = _find_soundfont()
+    disabled = os.environ.get("AUREON_SOUNDFONT") == "0"
+    available = not disabled and bool(binary) and bool(soundfont)
+    return {
+        "available": available,
+        "disabled": disabled,
+        "binary": str(binary) if binary else None,
+        "soundfont": str(soundfont) if soundfont else None,
+    }
+
+
 def soundfont_available() -> bool:
-    if os.environ.get("AUREON_SOUNDFONT") == "0":
-        return False
-    return bool(_find_binary() and _find_soundfont())
+    return renderer_status()["available"]
+
+
+def log_fallback_reason(status: dict = None) -> None:
+    """Log which piece is missing so users know how to get real GM sound."""
+    status = status or renderer_status()
+    if status["disabled"]:
+        log.warning(
+            "SoundFont rendering disabled (AUREON_SOUNDFONT=0); using the "
+            "numpy piano-synth fallback."
+        )
+        return
+    if not status["binary"]:
+        log.warning(
+            "FluidSynth binary not found; falling back to the numpy "
+            "piano-synth renderer. Install FluidSynth or set "
+            "AUREON_FLUIDSYNTH=<path to fluidsynth>."
+        )
+        return
+    if not status["soundfont"]:
+        log.warning(
+            "SoundFont not found; falling back to the numpy piano-synth "
+            "renderer. Set AUREON_SOUNDFONT=<path to a .sf2/.sf3>."
+        )
+        return
+    log.warning(
+        "SoundFont renderer unavailable; using the numpy piano-synth "
+        "fallback."
+    )
 
 
 def filter_midi_roles(mid_path: Path, roles: list) -> MidiFile:
@@ -122,8 +188,8 @@ def render_midi_with_soundfont(
     binary = _find_binary()
     sf = _find_soundfont()
     if not soundfont_available():
+        log_fallback_reason()
         return None
-
     filtered = None
     if roles:
         filtered = out_path.with_name(f"{out_path.stem}_rolefilter.mid")
@@ -149,6 +215,10 @@ def render_midi_with_soundfont(
             **kwargs,
         )
         if proc.returncode != 0 or not raw.is_file():
+            log.warning(
+                "FluidSynth failed (exit %s); falling back to the numpy "
+                "piano-synth renderer.", proc.returncode
+            )
             return None
         l, r = _read_wav(raw)
         if master:
@@ -158,8 +228,16 @@ def render_midi_with_soundfont(
         _write_wav(out_path, l, r)
         return len(l) / SAMPLE_RATE
     except subprocess.TimeoutExpired:
+        log.warning(
+            "FluidSynth timed out after %ss; falling back to the numpy "
+            "piano-synth renderer.", timeout
+        )
         return None
-    except Exception:  # noqa: BLE001 - renderer is best-effort
+    except Exception as exc:  # noqa: BLE001 - renderer is best-effort
+        log.warning(
+            "FluidSynth render raised %s; falling back to the numpy "
+            "piano-synth renderer.", exc
+        )
         return None
     finally:
         raw.unlink(missing_ok=True)

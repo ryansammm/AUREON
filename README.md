@@ -94,6 +94,11 @@ Add keys via the **Settings** page in the app, or edit `.env` directly.
   with real GM instruments via Tone.js + SoundFont-player.
 - **WAV render** — FluidSynth + GeneralUser GS SoundFont, with numpy fallback.
   Master chain: sidechain duck → compression → saturation → limiter.
+  When FluidSynth or a SoundFont is missing, the app logs a warning and the
+  generate API returns `"render_engine": "numpy_fallback"` (vs `"fluidsynth"`)
+  so the UI can flag the preview-quality audio. No personal machine paths are
+  baked in — FluidSynth is located via `AUREON_FLUIDSYNTH`, `PATH`, or common
+  install locations, and the SoundFont via `AUREON_SOUNDFONT` or common dirs.
 
 ## Install (Manual)
 
@@ -194,6 +199,17 @@ smoothly. It is launched automatically by `AUREON.bat` and by
 - writes `server.status.json` (read by `dev.ps1 -Status`) and a PID lockfile
   so only one watchdog runs
 
+The Flask server runs with `threaded=True` (`web/app.py` → `run_server`), so
+the `GET /api/config` health check is served concurrently with a long-running
+generation. This prevents the watchdog from mistaking a busy server for a dead
+one and restarting mid-generation.
+
+> **Manual test (watchdog during long generation):** launch the watchdog
+> (`.\scripts\dev.ps1 -Watch`), then start a long generation
+> (`python cli.py --genre dubstep --roles bass,lead,chord,drum --bars 180`).
+> The generation should complete without the watchdog logging a restart; a
+> healthy server shows `state: healthy` in `server.status.json` throughout.
+
 ```powershell
 # Manual watchdog control
 .\scripts\dev.ps1 -Watch                # background (production-style)
@@ -224,6 +240,16 @@ docker compose up -d --build
 
 - `./.env` is bind-mounted into the container at `/aureon/.env`, so API keys
   written via the Settings page persist across container restarts and rebuilds.
+- The image bundles **GeneralUser GS** (the documented default SoundFont) at
+  `/aureon/soundfonts/GeneralUser.sf2` and sets `AUREON_SOUNDFONT` to it, so
+  Docker-rendered audio matches a native setup. FluidR3_GM is also installed
+  as a fallback if you override `AUREON_SOUNDFONT`.
+- The app runs as a **non-root user** (UID 1000). The `output/` dir and the
+  mounted `./.env` are writable by that user; on native Linux hosts, ensure
+  your host `.env` is writable by UID 1000 (Docker Desktop bind mounts are
+  writable regardless). If upgrading from an older image that ran as root,
+  remove the old volume once so it is re-created with the new ownership:
+  `docker compose down -v && docker compose up -d`.
 - Generated output is stored in the named `aureon-output` volume.
 - `restart: unless-stopped` keeps the server running after reboots.
 

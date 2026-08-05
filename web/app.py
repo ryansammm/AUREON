@@ -101,7 +101,9 @@ def genre_defaults() -> dict:
 
 
 def _render_wav(mid_path: Path, wav_path: Path, gains: dict,
-                roles: list = None, reverb: bool = True) -> None:
+                roles: list = None, reverb: bool = True) -> str:
+    """Render ``mid_path`` to ``wav_path``; return which engine was used
+    (``"fluidsynth"`` or ``"numpy_fallback"``)."""
     from render_audio import render_to_wav
 
     # Prefer the SoundFont renderer (real GM instruments) when available;
@@ -115,12 +117,15 @@ def _render_wav(mid_path: Path, wav_path: Path, gains: dict,
                 master=roles is None,
             )
             if seconds is not None:
-                return
+                return "fluidsynth"
+        else:
+            sf_render.log_fallback_reason()
     except Exception:  # noqa: BLE001 - never break generation on render issues
         pass
 
     render_to_wav(mid_path, wav_path, gain=0.55, gains=gains, reverb=reverb,
                   roles=roles, master=roles is None)
+    return "numpy_fallback"
 
 
 def _serialize_notes(track) -> list:
@@ -313,7 +318,7 @@ def _generate_payload(data: dict, report=None) -> dict:
     )
 
     step("Rendering master audio", 0.72)
-    _render_wav(mid_path, wav_path, gains)
+    render_engine = _render_wav(mid_path, wav_path, gains)
 
     stems = []
     if make_stems:
@@ -389,6 +394,7 @@ def _generate_payload(data: dict, report=None) -> dict:
         ],
         "mid": mid_path.name,
         "wav": wav_path.name,
+        "render_engine": render_engine,
         "stems": stems,
         "candidates": candidate_entries,
         "ai": {
@@ -486,7 +492,13 @@ def api_settings_post():
         if key in data:
             env[key] = str(data[key])
 
-    _write_env_file(ENV_PATH, env)
+    try:
+        _write_env_file(ENV_PATH, env)
+    except OSError as exc:
+        return jsonify({
+            "ok": False,
+            "error": f"could not write {ENV_PATH.name}: {exc}",
+        }), 500
     return jsonify({"ok": True})
 
 
@@ -769,7 +781,19 @@ def spa(path):
     )
 
 
+def run_server(host: str = None, port: int = None, threaded: bool = True) -> None:
+    """Start the Flask dev server.
+
+    ``threaded=True`` (default) lets health checks be served concurrently
+    with a long-running generation, so the watchdog never mistakes a busy
+    server for a dead one. Generation work already runs on worker threads;
+    the engine uses per-instance seeded RNG and no mutable module globals,
+    so concurrent requests are safe.
+    """
+    host = host or os.environ.get("AUREON_HOST", "127.0.0.1")
+    port = port or int(os.environ.get("AUREON_PORT", "8000"))
+    app.run(host=host, port=port, debug=False, threaded=threaded)
+
+
 if __name__ == "__main__":
-    port = int(os.environ.get("AUREON_PORT", "8000"))
-    host = os.environ.get("AUREON_HOST", "127.0.0.1")
-    app.run(host=host, port=port, debug=False)
+    run_server()

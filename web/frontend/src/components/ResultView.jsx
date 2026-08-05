@@ -86,6 +86,22 @@ export default function ResultView({ result, params, onNew, onSelectCandidate })
         </div>
       </div>
 
+      {/* ─── Render engine note ─── */}
+      {r.render_engine === 'numpy_fallback' && (
+        <div className="rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-2.5 text-xs text-amber-200/90">
+          ⚠ SoundFont renderer unavailable — using the numpy piano-synth
+          preview. Install FluidSynth and a GM SoundFont (or set
+          <code className="mx-1 rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px]">
+            AUREON_FLUIDSYNTH
+          </code>
+          /
+          <code className="mx-1 rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px]">
+            AUREON_SOUNDFONT
+          </code>
+          ) for real GM instruments.
+        </div>
+      )}
+
       {/* ─── AI banner ─── */}
       {ai.enabled && (
         <div className="glass rounded-2xl border border-[#ff7a1a]/30 p-5">

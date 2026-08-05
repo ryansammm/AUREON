@@ -32,7 +32,20 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run tests
-        run: pytest -q
+        run: |
+          pytest -q --tb=long > pytest-out.txt 2>&1 || {
+            rc=$?
+            echo "pytest exited with $rc"
+            exit $rc
+          }
+
+      - name: Upload pytest output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-out
+          path: pytest-out.txt
+          if-no-files-found: ignore
 
   frontend:
     name: Frontend build (Vite)

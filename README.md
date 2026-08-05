@@ -1,6 +1,7 @@
 # Aureon by XYKS — AI Music Generator
 
 [![CI](https://github.com/ryansammm/AUREON/actions/workflows/tests.yml/badge.svg)](https://github.com/ryansammm/AUREON/actions/workflows/tests.yml)
+[![codecov](https://codecov.io/github/ryansammm/AUREON/graph/badge.svg)](https://codecov.io/github/ryansammm/AUREON)
 
 Rule-based MIDI composition engine that generates genre-aware, multi-track
 music (bass, leads, arps, chords, pads, drums) with arrangement structure,

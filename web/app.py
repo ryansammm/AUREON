@@ -324,6 +324,8 @@ def _generate_payload(data: dict, report=None) -> dict:
     if make_stems:
         n_roles = max(len(tracks), 1)
         for i, t in enumerate(tracks, start=1):
+            if not t.notes:
+                continue
             step(f"Rendering stem: {t.role}", 0.72 + 0.10 * i / n_roles)
             stem_wav = output_dir / f"{base_name}_stem_{t.role}.wav"
             _render_wav(mid_path, stem_wav, gains, roles=[t.role], reverb=False)
@@ -552,7 +554,10 @@ def api_generate_stream():
                                                                "pct": p}))
             )
             events.put(("result", result))
-        except Exception as exc:  # noqa: BLE001 - surface as SSE error
+        except BaseException as exc:  # noqa: BLE001 - surface as SSE error
+            # Catching BaseException (incl. SystemExit) so a fatal render
+            # failure always reaches the client instead of silently killing
+            # the thread and leaving the UI stuck on the last step event.
             events.put(("error", {"error": str(exc)}))
         finally:
             watchdog.cancel()

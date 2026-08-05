@@ -15,6 +15,7 @@ Usage:
 """
 
 import argparse
+import sys
 import wave
 from pathlib import Path
 
@@ -69,8 +70,13 @@ def build_note_events(track, tpb: int, seconds_per_tick: float) -> list:
 
 def track_role(track_name: str, notes: list) -> str:
     """Infer a track's role from its name (specific roles win over generic
-    sound words, e.g. "Lead - Pluck" -> lead, "Chord - Dark Stabs" -> chord)."""
-    name = (track_name or "").lower()
+    sound words, e.g. "Lead - Pluck" -> lead, "Chord - Dark Stabs" -> chord).
+
+    The genre is appended in parens (e.g. "Counter Lead (future_bass)"), so it
+    is stripped first — otherwise genre names like ``future_bass`` or
+    ``drum_and_bass`` leak role keywords and misclassify every track.
+    """
+    name = (track_name or "").lower().split("(")[0]
     if "layer" in name or "percussion" in name:
         return "drum_layers"
     if any(k in name for k in ("drum", "kit")):
@@ -343,7 +349,7 @@ def render_to_wav(
             note_plans.append((start, dur, pitch, freq, vel, role))
             end_time = max(end_time, start + dur)
     if not note_plans:
-        raise SystemExit(f"no notes found in {mid_path}")
+        raise ValueError(f"no notes found in {mid_path}")
 
     end_time += 1.0
     length = int(end_time * SAMPLE_RATE) + 1
@@ -442,7 +448,11 @@ def main():
 
     mid_path = Path(args.input)
     out_path = Path(args.output) if args.output else mid_path.with_suffix(".wav")
-    render_to_wav(mid_path, out_path, args.gain, reverb=not args.no_reverb)
+    try:
+        render_to_wav(mid_path, out_path, args.gain, reverb=not args.no_reverb)
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

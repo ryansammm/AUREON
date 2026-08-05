@@ -583,26 +583,47 @@ def api_generate_stream():
     )
 
 
+def _split_genre_roles(middle: str) -> tuple:
+    """Split ``<genre>_<role1>-<role2>-...`` using the known vocabularies.
+
+    Genres (``kawaii_future_bass``) and role names (``drum_layers``,
+    ``counter_lead``) both contain underscores, so a positional split is
+    ambiguous. Match the longest known genre as a prefix, then verify the
+    remainder is a dash-joined list of known roles.
+    """
+    role_set = set(ROLES)
+    for genre in sorted(available_genres(), key=len, reverse=True):
+        if not middle.startswith(genre + "_"):
+            continue
+        role_parts = middle[len(genre) + 1:].split("-")
+        if role_parts and all(r in role_set for r in role_parts):
+            return genre, role_parts
+    return "", []
+
+
 def parse_base_name(base_name: str) -> dict:
     """Parse ``run{id}_{genre}_{roles}_{key}{mode}_seed{n}`` into metadata."""
-    parts = base_name.split("_")
-    meta = {
-        "run_id": parts[0] if parts else base_name,
-        "genre": parts[1] if len(parts) > 1 else "",
-        "roles": parts[2].split("-") if len(parts) > 2 else [],
-    }
-    keymode = parts[3] if len(parts) > 3 else ""
-    if keymode.endswith("minor"):
-        meta["mode"], meta["key"] = "minor", keymode[:-5]
-    elif keymode.endswith("major"):
-        meta["mode"], meta["key"] = "major", keymode[:-5]
-    else:
-        meta["mode"], meta["key"] = "", keymode
-    if len(parts) > 4 and parts[4].startswith("seed"):
-        try:
-            meta["seed"] = int(parts[4][4:])
-        except ValueError:
-            pass
+    meta = {"run_id": base_name, "genre": "", "roles": [], "mode": "", "key": ""}
+    rest = base_name
+    m = re.match(r"^run[0-9a-fA-F]+_(.+)$", base_name)
+    if m:
+        meta["run_id"] = base_name[: m.start(1) - 1]
+        rest = m.group(1)
+    m = re.search(r"_seed(\d+)$", rest)
+    if m:
+        meta["seed"] = int(m.group(1))
+        rest = rest[: -len(m.group(0))]
+    m = re.search(r"_([a-g](?:[#b]|is)?(?:major|minor))$", rest)
+    if m:
+        keymode = m.group(1)
+        rest = rest[: -len(m.group(0))]
+        if keymode.endswith("minor"):
+            meta["mode"], meta["key"] = "minor", keymode[:-5]
+        elif keymode.endswith("major"):
+            meta["mode"], meta["key"] = "major", keymode[:-5]
+    genre, roles = _split_genre_roles(rest)
+    meta["genre"] = genre
+    meta["roles"] = roles
     return meta
 
 
@@ -616,6 +637,24 @@ def _safe_output_file(filename: str) -> Path | None:
     if candidate != root and root not in candidate.parents:
         return None
     return candidate if candidate.is_file() else None
+
+
+def _friendly_midi_stem(filename: str, role: str = "") -> str:
+    """Human-readable download stem from an internal run file name.
+
+    Turns ``run179c6e_kawaii_future_bass_..._emajor_seed887.mid`` into
+    ``kawaii_future_bass_emajor_seed887`` (plus ``_<role>`` when given), so
+    downloads keep the musical meaning instead of the opaque run id. Falls
+    back to the raw stem when the name can't be parsed.
+    """
+    meta = parse_base_name(Path(filename).stem)
+    parts = [p for p in (
+        meta.get("genre"),
+        f"{meta.get('key', '')}{meta.get('mode', '')}",
+        f"seed{meta['seed']}" if meta.get("seed") is not None else "",
+        role,
+    ) if p]
+    return "_".join(parts) or Path(filename).stem
 
 
 @app.route("/api/export/<path:filename>")
@@ -690,7 +729,9 @@ def export_bundle(filename):
         buf,
         mimetype="application/zip",
         headers={
-            "Content-Disposition": f'attachment; filename="{base}_bundle.zip"'
+            "Content-Disposition": (
+                f'attachment; filename="{_friendly_midi_stem(filename)}_bundle.zip"'
+            )
         },
     )
 
@@ -703,8 +744,12 @@ def track_midi(filename):
         return jsonify({"error": "not found"}), 404
     role = (request.args.get("role") or "").strip()
     if not role:
-        return send_from_directory(app.config["OUTPUT_DIR"], filename,
+        resp = send_from_directory(app.config["OUTPUT_DIR"], filename,
                                    as_attachment=True)
+        resp.headers["Content-Disposition"] = (
+            f'attachment; filename="{_friendly_midi_stem(filename)}.mid"'
+        )
+        return resp
 
     from mido import MidiFile
     from render_audio import build_note_events, track_role
@@ -722,7 +767,7 @@ def track_midi(filename):
     buf = io.BytesIO()
     out.save(file=buf)
     buf.seek(0)
-    stem_name = f"{Path(filename).stem}_{role}.mid"
+    stem_name = f"{_friendly_midi_stem(filename, role)}.mid"
     return Response(
         buf,
         mimetype="audio/mid",
@@ -737,7 +782,12 @@ def play(filename):
 
 @app.route("/download/<path:filename>")
 def download(filename):
-    return send_from_directory(app.config["OUTPUT_DIR"], filename, as_attachment=True)
+    resp = send_from_directory(app.config["OUTPUT_DIR"], filename, as_attachment=True)
+    if Path(filename).suffix.lower() in (".mid", ".midi"):
+        resp.headers["Content-Disposition"] = (
+            f'attachment; filename="{_friendly_midi_stem(filename)}.mid"'
+        )
+    return resp
 
 
 @app.route("/api/import/midi", methods=["POST"])

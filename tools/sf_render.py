@@ -54,6 +54,7 @@ _COMMON_SF_DIRS = [
     Path("/usr/share/sounds/sf3"),
     Path("/usr/share/sounds"),
     Path("/Library/Audio/Sounds/Banks"),  # macOS
+    Path(os.environ.get("LOCALAPPDATA", "")) / r"Programs\fluidsynth\sf2",
 ]
 
 

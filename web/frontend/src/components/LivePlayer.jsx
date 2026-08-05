@@ -108,7 +108,12 @@ async function loadInstrument(ctx, role, Soundfont) {
   const names = [SF_NAME[role], 'acoustic_grand_piano'].filter(Boolean)
   for (const name of names) {
     try {
-      return await Soundfont.instrument(ctx, name)
+      return await Promise.race([
+        Soundfont.instrument(ctx, name),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('SoundFont load timed out')), 20000),
+        ),
+      ])
     } catch {
       /* try next name */
     }
@@ -141,7 +146,11 @@ export default function LivePlayer({ mid, roles = [] }) {
       await Tone.start()
       Tone.getTransport().cancel()
       Tone.getTransport().stop()
-      const ctx = Tone.getContext()
+      // soundfont-player needs a native AudioContext. Tone v15's Context only
+      // exposes the Promise-style decodeAudioData and ignores the callback
+      // args audio-loader uses, so decoding would hang forever — pass the raw
+      // browser context instead.
+      const sfCtx = Tone.getContext().rawContext
       const melodicRoles = roles.filter((r) => !DRUM_ROLES.has(r))
       const drumRoles = roles.filter((r) => DRUM_ROLES.has(r))
 
@@ -154,7 +163,7 @@ export default function LivePlayer({ mid, roles = [] }) {
         volume: -6,
       }).toDestination()
       for (const role of melodicRoles) {
-        const inst = await loadInstrument(ctx, role, Soundfont)
+        const inst = await loadInstrument(sfCtx, role, Soundfont)
         if (inst) {
           instruments[role] = inst
           anySf = true

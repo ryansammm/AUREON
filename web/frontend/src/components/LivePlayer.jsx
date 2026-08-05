@@ -16,7 +16,17 @@ const SF_NAME = {
 }
 const DRUM_ROLES = new Set(['drum', 'drum_layers'])
 
-function parseRoleNotes(buffer) {
+// Group a sorted plan into per-role arrays of [start, note] for Tone.Part.
+export function groupByRole(plan) {
+  const byRole = new Map()
+  for (const n of plan) {
+    if (!byRole.has(n.role)) byRole.set(n.role, [])
+    byRole.get(n.role).push([n.start, n])
+  }
+  return byRole
+}
+
+export function parseRoleNotes(buffer) {
   const midi = parseMidi(buffer)
   const tpb = midi.header.ticksPerBeat || 480
   let usPerBeat = 500000
@@ -212,11 +222,7 @@ export default function LivePlayer({ mid, roles = [] }) {
       // note — Tone internally ticks through the event list once, so a long
       // composition (thousands of notes) schedules in O(roles) not O(notes).
       const parts = []
-      const byRole = new Map()
-      for (const n of plan) {
-        if (!byRole.has(n.role)) byRole.set(n.role, [])
-        byRole.get(n.role).push([n.start, n])
-      }
+      const byRole = groupByRole(plan)
       for (const [role, events] of byRole) {
         const part = new Tone.Part((time, n) => schedule(n, time), events)
         part.start(0)

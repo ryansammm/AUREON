@@ -21,6 +21,10 @@ logger = logging.getLogger(__name__)
 CONFIG_DIR = Path(__file__).resolve().parent.parent / "config" / "genres"
 FALLBACK_GENRE = "generic"
 
+
+class ConfigCycleError(ValueError):
+    """Raised when a genre inheritance chain forms a cycle (a -> b -> a)."""
+
 REQUIRED_KEYS = {
     "genre": str,
     "default_bpm": (int, float),
@@ -126,6 +130,30 @@ def _validate_sections(config: dict) -> None:
             raise ValueError(f"selector_weights['{name}'] must be positive")
 
 
+def _validate_interlock(config: dict) -> None:
+    """Validate the optional bass_drum_interlock block."""
+    interlock = config.get("bass_drum_interlock") or {}
+    if not interlock:
+        return
+    if not isinstance(interlock, dict):
+        raise ValueError("bass_drum_interlock must be an object")
+    mode = interlock.get("mode")
+    if mode not in (None, "lock", "syncopate", "independent"):
+        raise ValueError(
+            f"bass_drum_interlock.mode must be one of lock / syncopate / "
+            f"independent, got {mode!r}"
+        )
+    prob = interlock.get("lock_probability")
+    if prob is not None and not (0.0 <= float(prob) <= 1.0):
+        raise ValueError("bass_drum_interlock.lock_probability must be in [0, 1]")
+    conflict = interlock.get("on_conflict")
+    if conflict not in (None, "drop", "shift"):
+        raise ValueError(
+            f"bass_drum_interlock.on_conflict must be 'drop' or 'shift', "
+            f"got {conflict!r}"
+        )
+
+
 def _validate_groove(config: dict) -> None:
     """Validate optional groove_profile and groove_strength keys."""
     profile = config.get("groove_profile")
@@ -171,28 +199,50 @@ def validate_genre_config(config) -> bool:
     _validate_drum_patterns(config)
     _validate_role_params(config)
     _validate_sections(config)
+    _validate_interlock(config)
     _validate_groove(config)
     return True
 
 
-def load_genre_config(genre: str, config_dir: Path = None) -> dict:
+def load_genre_config(genre: str, config_dir: Path = None, _chain: tuple = ()) -> dict:
     """Load and validate a genre config, falling back to ``generic``.
 
     If a config contains ``parent_genre``, it inherits all keys from the
     parent and only overrides specified fields.  Override keys are merged
     recursively for dicts and replaced outright for other types.
+
+    A circular inheritance chain (``a -> b -> a``) is detected via the
+    recursion ``_chain`` and treated as invalid config: a
+    :class:`ConfigCycleError` is raised and, at the top-level call,
+    converted into the ``generic`` fallback with a warning — never a
+    silent failure.
     """
     config_dir = config_dir or CONFIG_DIR
     path = Path(config_dir) / f"{genre}.json"
     try:
+        if genre in _chain:
+            raise ConfigCycleError(
+                "cycle in genre inheritance: " + " -> ".join(_chain + (genre,))
+            )
         with open(path, encoding="utf-8") as fh:
             config = json.load(fh)
         parent_name = config.get("parent_genre")
         if parent_name:
-            parent = load_genre_config(parent_name, config_dir)
+            parent = load_genre_config(parent_name, config_dir, _chain + (genre,))
             config = _merge_overrides(parent, config)
         validate_genre_config(config)
         return config
+    except ConfigCycleError as exc:
+        # Intermediate frames propagate the cycle up to the original caller.
+        if _chain:
+            raise
+        if genre == FALLBACK_GENRE:
+            raise
+        logger.warning(
+            "Genre config '%s' has a circular inheritance chain (%s) — "
+            "falling back to '%s'.",
+            genre, exc, FALLBACK_GENRE,
+        )
     except FileNotFoundError:
         if genre == FALLBACK_GENRE:
             raise

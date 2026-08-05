@@ -1,0 +1,7 @@
+{
+  "id": "hardstyle_pumping",
+  "resolution": 16,
+  "description": "Mechanical hardstyle pump. Hard kick locked to grid, reverse-bass off-beats slightly late for the signature drive.",
+  "offsets_ticks": [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0],
+  "velocity_scalars": [1.0, 0.7, 0.9, 0.7, 1.0, 0.7, 0.9, 0.7, 1.0, 0.7, 0.9, 0.7, 1.0, 0.7, 0.9, 0.7]
+}

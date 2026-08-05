@@ -10,6 +10,12 @@ Makes a generated line feel played rather than programmed (FR-6):
   deterministic per-step timing/velocity offsets replace or blend with
   the random jitter, producing a consistent, genre-typical feel.
 
+Groove offsets themselves are applied upstream (pipeline calls
+``groove.apply_groove`` before this engine for every role, including
+drum/drum_layers).  This engine therefore never adds *random* timing
+jitter to drums — the deterministic groove profile is the only timing
+signal drums receive — while the phrase-arc velocity still applies.
+
 Musical assumptions:
 - Offsets are in milliseconds and converted to beats using the tempo, so
   the musical deviation stays constant regardless of BPM.

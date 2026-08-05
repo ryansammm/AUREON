@@ -10,6 +10,9 @@ services:
       - .env
     volumes:
       - aureon-output:/aureon/output
+      # Persist .env settings (Gemini/Groq keys) written via the web UI
+      # across container restarts.
+      - ./.env:/aureon/.env
     restart: unless-stopped
 
 volumes:

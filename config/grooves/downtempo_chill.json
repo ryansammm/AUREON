@@ -1,0 +1,7 @@
+{
+  "id": "downtempo_chill",
+  "resolution": 16,
+  "description": "Relaxed downtempo pocket. Gentle push-pull on the off-beats, velocities rounded off for a lazy, human feel.",
+  "offsets_ticks": [0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0],
+  "velocity_scalars": [1.0, 0.8, 0.9, 0.8, 1.0, 0.8, 0.9, 0.8, 1.0, 0.8, 0.9, 0.8, 1.0, 0.8, 0.9, 0.8]
+}

@@ -608,5 +608,11 @@
       "label": "Drum Layers - Percussion (downtempo)",
       "preset": "electronic_percussion"
     }
+  },
+  "groove_profile": "downtempo_chill",
+  "groove_strength": 0.85,
+  "bass_drum_interlock": {
+    "mode": "independent",
+    "lock_probability": 0.0
   }
 }

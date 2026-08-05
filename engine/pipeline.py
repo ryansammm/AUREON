@@ -191,10 +191,12 @@ def generate_track(
         track = DrumEngine(config, seed).generate_track(
             plan, humanize=humanize, bpm=bpm, seed=seed
         )
+        _apply_groove_if_configured(config, track.notes, "drum")
     elif role == "drum_layers":
         track = DrumEngine(config, seed).generate_layers(
             plan, humanize=humanize, bpm=bpm, seed=seed
         )
+        _apply_groove_if_configured(config, track.notes, "drum_layers")
     else:
         intent = config["instrument_intent"][role]
         track = Track(
@@ -210,7 +212,7 @@ def generate_track(
 
 def _role_notes(melody, role, progression, scale_pcs, plan, complexity,
                 motif=None, kick_mask=None, interlock_mode="independent",
-                interlock_probability=0.7):
+                interlock_probability=0.7, interlock_on_conflict="drop"):
     """Route a melodic role to its generator and return the notes."""
     if role in CHORD_ROLES:
         return melody.generate_chord_track(progression, scale_pcs, role=role, plan=plan)
@@ -235,6 +237,7 @@ def _role_notes(melody, role, progression, scale_pcs, plan, complexity,
         progression, scale_pcs, role=role, plan=plan, complexity=complexity,
         motif=motif, kick_mask=kick_mask, interlock_mode=interlock_mode,
         interlock_probability=interlock_probability,
+        interlock_on_conflict=interlock_on_conflict,
     )
 
 
@@ -306,6 +309,7 @@ def generate_composition(
         drum_track = drum_engine.generate_track(
             plan, humanize=humanize, bpm=bpm, seed=seed
         )
+        _apply_groove_if_configured(config, drum_track.notes, "drum")
         drum_track.cc = build_cc_automation(config, plan, "drum")
         kick_mask = drum_engine.extract_kick_mask(plan)
         tracks.append(drum_track)
@@ -319,6 +323,7 @@ def generate_composition(
             track = DrumEngine(config, seed).generate_track(
                 plan, humanize=humanize, bpm=bpm, seed=seed
             )
+            _apply_groove_if_configured(config, track.notes, "drum")
             track.cc = build_cc_automation(config, plan, role)
             tracks.append(track)
             continue
@@ -326,6 +331,7 @@ def generate_composition(
             track = DrumEngine(config, seed).generate_layers(
                 plan, humanize=humanize, bpm=bpm, seed=seed
             )
+            _apply_groove_if_configured(config, track.notes, "drum_layers")
             track.cc = build_cc_automation(config, plan, role)
             tracks.append(track)
             continue
@@ -334,11 +340,12 @@ def generate_composition(
         km = kick_mask if (kick_mask and role in bass_roles) else None
         im = interlock_mode if (km) else "independent"
         ip = interlock_prob if (km) else 0.7
+        ic = interlock_cfg.get("on_conflict", "drop") if (km) else "drop"
 
         notes = _role_notes(
             melody, role, progression, scale_pcs, plan, complexity,
             motif=motif, kick_mask=km, interlock_mode=im,
-            interlock_probability=ip,
+            interlock_probability=ip, interlock_on_conflict=ic,
         )
         _apply_groove_if_configured(config, notes, role)
         if humanize:

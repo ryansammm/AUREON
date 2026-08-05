@@ -1,0 +1,7 @@
+{
+  "id": "psytrance_rolling",
+  "resolution": 16,
+  "description": "Hypnotic psytrance roller. Kick locked, rolling 16th bass pinned to the grid for maximum propulsion.",
+  "offsets_ticks": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  "velocity_scalars": [1.0, 0.85, 0.9, 0.85, 1.0, 0.85, 0.9, 0.85, 1.0, 0.85, 0.9, 0.85, 1.0, 0.85, 0.9, 0.85]
+}

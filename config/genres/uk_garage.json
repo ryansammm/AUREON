@@ -615,5 +615,11 @@
       "label": "Drum Layers - Percussion (uk_garage)",
       "preset": "electronic_percussion"
     }
+  },
+  "groove_profile": "uk_garage_shuffle",
+  "groove_strength": 0.9,
+  "bass_drum_interlock": {
+    "mode": "syncopate",
+    "lock_probability": 0.8
   }
 }

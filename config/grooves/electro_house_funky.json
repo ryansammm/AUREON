@@ -1,0 +1,7 @@
+{
+  "id": "electro_house_funky",
+  "resolution": 16,
+  "description": "Funky electro-house bounce. Off-beat bass stabs pushed late and accent-heavy for a squelchy, party-groove feel.",
+  "offsets_ticks": [0, 0, 2, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 2, 0, 0],
+  "velocity_scalars": [1.0, 0.7, 0.9, 0.65, 1.0, 0.7, 0.9, 0.65, 1.0, 0.7, 0.9, 0.65, 1.0, 0.7, 0.9, 0.65]
+}

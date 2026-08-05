@@ -689,5 +689,11 @@
       "section": "drop2",
       "semitones": 1
     }
-  ]
+  ],
+  "groove_profile": "future_bass_bright",
+  "groove_strength": 0.85,
+  "bass_drum_interlock": {
+    "mode": "syncopate",
+    "lock_probability": 0.6
+  }
 }

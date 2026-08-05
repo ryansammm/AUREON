@@ -1,0 +1,7 @@
+{
+  "id": "generic_neutral",
+  "resolution": 16,
+  "description": "Neutral all-round groove. Subtle off-beat lift and gentle dynamics that work for any fallback genre.",
+  "offsets_ticks": [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+  "velocity_scalars": [1.0, 0.8, 0.9, 0.7, 1.0, 0.8, 0.9, 0.7, 1.0, 0.8, 0.9, 0.7, 1.0, 0.8, 0.9, 0.7]
+}

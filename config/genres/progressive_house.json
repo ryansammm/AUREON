@@ -662,5 +662,11 @@
       "label": "Drum Layers - Percussion (progressive_house)",
       "preset": "electronic_percussion"
     }
+  },
+  "groove_profile": "progressive_house_pocket",
+  "groove_strength": 0.85,
+  "bass_drum_interlock": {
+    "mode": "syncopate",
+    "lock_probability": 0.7
   }
 }

@@ -639,5 +639,11 @@
       "label": "Drum Layers - Percussion (trap)",
       "preset": "electronic_percussion"
     }
+  },
+  "groove_profile": "trap_slumped",
+  "groove_strength": 0.9,
+  "bass_drum_interlock": {
+    "mode": "syncopate",
+    "lock_probability": 0.75
   }
 }

@@ -2,8 +2,9 @@
 
 Rule-based MIDI composition engine that generates genre-aware, multi-track
 music (bass, leads, arps, chords, pads, drums) with arrangement structure,
-humanized timing and MIDI export. 15 parent genres + 26 sub-genres, 10
-instrument roles, real GM SoundFont rendering. 100% local and free/open-source.
+humanized timing and MIDI export. 14 parent genres + 26 sub-genres, 15 groove
+profiles, 10 instrument roles, real GM SoundFont rendering. 100% local and
+free/open-source.
 
 Optional **AI layer** — the engine can ask a free-tier LLM (Gemini → Groq
 fallback) for creative ideas (progression + motif) and to re-score candidate
@@ -50,11 +51,13 @@ Add keys via the **Settings** page in the app, or edit `.env` directly.
 
 ## Features
 
-- **41 genres** — 15 parent genres (`techno`, `trance`, `house`, `dubstep`,
+- **40 genres** — 14 parent genres (`techno`, `trance`, `house`, `dubstep`,
   `drum_and_bass`, `trap`, `future_bass`, `hardstyle`, `uk_garage`,
-  `downtempo`, `psytrance`, `progressive_house`, `big_room`, `electro_house`,
+  `downtempo`, `progressive_house`, `big_room`, `electro_house`,
   `generic`) + 26 sub-genres with genre-specific BPM, patterns, swing, and
-  arrangement. Sub-genres inherit from parents via `parent_genre` config.
+  arrangement. Sub-genres inherit from parents via `parent_genre` config,
+  and cyclic inheritance is detected with a `ConfigCycleError` instead of
+  looping forever.
 - **Multi-track composition** — shared arrangement + chord progression across
   `bass`, `sub_bass`, `lead`, `counter_lead`, `arp`, `stab`, `chord`/`pad`,
   `drum` and `drum_layers` roles with register separation.
@@ -67,6 +70,16 @@ Add keys via the **Settings** page in the app, or edit `.env` directly.
   progressions + melodic motifs, and `AIScorer` re-ranks candidates.
 - **Humanization** — micro-timing, velocity arcs, per-genre swing/groove.
   Drums keep velocity humanization but skip timing humanization.
+- **Groove profiles** — 15 per-genre timing/velocity templates
+  (`config/grooves/*.json`) applied to bass and drums; each genre config
+  picks a profile via `groove_profile` + `groove_strength`. Grooves add
+  micro-offsets and velocity accents to drums and drum_layers in addition
+  to melodic roles.
+- **Bass-drum interlock** — optional `bass_drum_interlock` block per genre
+  biases the bassline around the kick pattern: `lock` keeps bass on the
+  kick grid, `syncopate` pushes it off-beat, `independent` ignores the kick.
+  In `lock` mode rejected onsets are dropped by default or snapped onto the
+  nearest kick with `"on_conflict": "shift"`.
 - **MIDI automation** — CC 74 + CC 11, percussion on channel 10, tempo map,
   section modulations.
 - **Web UI** — React + Vite + Tailwind SPA with:
@@ -200,6 +213,20 @@ Copy `.env.example` → `.env` and add at least one key, or use the Settings
 page in the app. Gemini is tried first; on failure falls back to Groq.
 With no key the engine stays 100% rule-based.
 
+## Docker
+
+Run the full stack in a container (Flask server + built SPA):
+
+```bash
+docker compose up -d --build
+# open http://127.0.0.1:8000
+```
+
+- `./.env` is bind-mounted into the container at `/aureon/.env`, so API keys
+  written via the Settings page persist across container restarts and rebuilds.
+- Generated output is stored in the named `aureon-output` volume.
+- `restart: unless-stopped` keeps the server running after reboots.
+
 ## Tests
 
 ```bash
@@ -212,13 +239,14 @@ Layer-based pipeline (`engine/`), each layer independently testable:
 
 | Layer | Module | Responsibility |
 |-------|--------|----------------|
-| 0 | `config_loader.py` | genre config load/validate + `parent_genre` inheritance |
+| 0 | `config_loader.py` | genre config load/validate + `parent_genre` inheritance with cycle detection |
 | 1 | `harmony.py` | chord progression (weighted pool + transition matrix) |
 | 2 | `melody.py` / `drums.py` | bass/lead lines, chord voicings, drum patterns |
 | 3 | `arrangement.py` | section plan + energy curve |
 | 4 | `selector.py` | candidate generation + ensemble scoring |
 | 5 | `humanizer.py` | micro-timing, velocity, swing |
 | 6 | `exporter.py` | Type-1 multi-track MIDI, CC, tempo map |
+| — | `groove.py` | groove profile load + timing/velocity application |
 | — | `pipeline.py` | wires 0→6; multi-role composition |
 | — | `metrics.py` | per-track/section stats report |
 | — | `llm.py` | Gemini/Groq provider chain + JSON extraction |

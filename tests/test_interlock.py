@@ -75,6 +75,69 @@ class TestBassInterlock:
             near_kick = any(abs(bar_pos - kb % 4.0) < 0.3 for kb in kick_mask)
             assert near_kick, f"Note at beat {note.start_beat} not near any kick"
 
+    def test_shift_mode_preserves_note_count(self, house_config):
+        engine = MelodicEngine(house_config, seed=42)
+        from engine.harmony import HarmonicEngine
+        from engine.music_utils import get_scale_pitch_classes
+
+        harmony = HarmonicEngine(house_config, seed=42)
+        progression = harmony.generate_progression("f", "major", 4)
+        scale_pcs = get_scale_pitch_classes("f", "major")
+
+        kick_mask = {0.0}  # only downbeat -> most onsets conflict
+        plan = [
+            SectionBar(bar=i, name="drop", density=0.8,
+                       register_shift=0, base_velocity=100)
+            for i in range(4)
+        ]
+
+        notes_shift = engine.generate_bassline(
+            progression, scale_pcs, role="bass", plan=plan,
+            complexity="medium", kick_mask=kick_mask,
+            interlock_mode="lock", interlock_probability=1.0,
+            interlock_on_conflict="shift",
+        )
+        notes_drop = engine.generate_bassline(
+            progression, scale_pcs, role="bass", plan=plan,
+            complexity="medium", kick_mask=kick_mask,
+            interlock_mode="lock", interlock_probability=1.0,
+            interlock_on_conflict="drop",
+        )
+        # Shift keeps all onsets (snapped to kicks), drop removes conflicts
+        assert len(notes_shift) > len(notes_drop)
+        for note in notes_shift:
+            bar_pos = note.start_beat % 4.0
+            near_kick = any(abs(bar_pos - kb % 4.0) < 0.3 for kb in kick_mask)
+            assert near_kick, f"Shifted note at beat {note.start_beat} not on kick"
+
+    def test_shift_mode_snaps_offbeat_to_kick(self, house_config):
+        engine = MelodicEngine(house_config, seed=42)
+        from engine.harmony import HarmonicEngine
+        from engine.music_utils import get_scale_pitch_classes
+
+        harmony = HarmonicEngine(house_config, seed=42)
+        progression = harmony.generate_progression("f", "major", 4)
+        scale_pcs = get_scale_pitch_classes("f", "major")
+
+        kick_mask = {0.0, 1.0, 2.0, 3.0}  # every beat
+        plan = [
+            SectionBar(bar=i, name="drop", density=0.8,
+                       register_shift=0, base_velocity=100)
+            for i in range(4)
+        ]
+
+        notes = engine.generate_bassline(
+            progression, scale_pcs, role="bass", plan=plan,
+            complexity="medium", kick_mask=kick_mask,
+            interlock_mode="lock", interlock_probability=1.0,
+            interlock_on_conflict="shift",
+        )
+        # Every note must land exactly on an integer beat
+        for note in notes:
+            assert note.start_beat % 1.0 == 0.0, (
+                f"Note at beat {note.start_beat} not snapped to grid"
+            )
+
     def test_independent_mode_ignores_kick_mask(self, house_config):
         engine = MelodicEngine(house_config, seed=42)
         from engine.harmony import HarmonicEngine

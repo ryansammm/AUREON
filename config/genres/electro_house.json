@@ -634,5 +634,11 @@
       "label": "Drum Layers - Percussion (electro_house)",
       "preset": "electronic_percussion"
     }
+  },
+  "groove_profile": "electro_house_funky",
+  "groove_strength": 0.9,
+  "bass_drum_interlock": {
+    "mode": "syncopate",
+    "lock_probability": 0.75
   }
 }

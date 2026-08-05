@@ -689,5 +689,12 @@
       "label": "Drum Layers - Percussion (big_room)",
       "preset": "electronic_percussion"
     }
+  },
+  "groove_profile": "big_room_stadium",
+  "groove_strength": 0.9,
+  "bass_drum_interlock": {
+    "mode": "lock",
+    "lock_probability": 0.85,
+    "on_conflict": "shift"
   }
 }

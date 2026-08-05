@@ -1,0 +1,7 @@
+{
+  "id": "big_room_stadium",
+  "resolution": 16,
+  "description": "Stadium big-room energy. Everything pinned to the grid, kick and drop hits absolutely locked with broad velocity dynamics.",
+  "offsets_ticks": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  "velocity_scalars": [1.0, 0.7, 0.85, 0.7, 1.0, 0.7, 0.85, 0.7, 1.0, 0.7, 0.85, 0.7, 1.0, 0.7, 0.85, 0.7]
+}

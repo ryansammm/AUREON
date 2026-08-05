@@ -57,6 +57,7 @@ class MelodicEngine:
         kick_mask: set = None,
         interlock_mode: str = "independent",
         interlock_probability: float = 0.7,
+        interlock_on_conflict: str = "drop",
     ) -> list:
         """Return a list of :class:`Note` for the whole progression.
 
@@ -80,6 +81,9 @@ class MelodicEngine:
                 ``"syncopate"`` biases away, ``"independent"`` ignores mask.
             interlock_probability: probability (0-1) of conforming to the
                 interlock constraint.  1.0 = strict, 0.0 = independent.
+            interlock_on_conflict: how a rejected ``lock`` onset is handled —
+                ``"drop"`` removes the note, ``"shift"`` snaps it onto the
+                nearest kick hit so the note count is preserved.
         """
         role_range = self.config["role_ranges"][role]
         default_section = self.config.get("section_template", ["drop"])[0]
@@ -120,13 +124,23 @@ class MelodicEngine:
                         abs(abs_onset - kb) < STEP_BEAT * 0.6 for kb in kick_mask
                     )
                     if interlock_mode == "lock":
-                        accept = near_kick or self.rng.random() > interlock_probability
+                        if near_kick or self.rng.random() > interlock_probability:
+                            pass
+                        elif interlock_on_conflict == "shift":
+                            # Snap the onset onto the nearest kick hit so the
+                            # bass still lands on the grid (keeps the note).
+                            onset = min(
+                                kick_mask,
+                                key=lambda kb: abs(abs_onset - kb),
+                            ) - bar_start
+                            abs_onset = bar_start + onset
+                        else:
+                            # Default: drop the note entirely.
+                            continue
                     elif interlock_mode == "syncopate":
                         accept = not near_kick or self.rng.random() > interlock_probability
-                    else:
-                        accept = True
-                    if not accept:
-                        continue
+                        if not accept:
+                            continue
 
                 interval = motif_intervals[k % len(motif_intervals)]
                 if invert:

@@ -48,5 +48,11 @@
       "label": "Drums - Psy 4x4",
       "preset": "psy_kit / 909"
     }
+  },
+  "groove_profile": "psytrance_rolling",
+  "groove_strength": 0.9,
+  "bass_drum_interlock": {
+    "mode": "independent",
+    "lock_probability": 0.0
   }
 }

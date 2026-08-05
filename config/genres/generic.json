@@ -683,5 +683,11 @@
       "label": "Drum Layers - Percussion (generic)",
       "preset": "electronic_percussion"
     }
+  },
+  "groove_profile": "generic_neutral",
+  "groove_strength": 0.8,
+  "bass_drum_interlock": {
+    "mode": "independent",
+    "lock_probability": 0.0
   }
 }

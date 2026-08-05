@@ -1,0 +1,7 @@
+{
+  "id": "trap_slumped",
+  "resolution": 16,
+  "description": "Slumped trap swing. 808 and kick on grid, hi-hats pushed ahead with triplet-ish swagger on the off-beats.",
+  "offsets_ticks": [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+  "velocity_scalars": [1.0, 0.6, 0.8, 0.55, 0.9, 0.6, 0.8, 0.5, 1.0, 0.6, 0.8, 0.55, 0.9, 0.6, 0.8, 0.5]
+}

@@ -1,0 +1,7 @@
+{
+  "id": "future_bass_bright",
+  "resolution": 16,
+  "description": "Bright future-bass bounce. Upbeats slightly late and accented for a playful, melodic hop.",
+  "offsets_ticks": [0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0],
+  "velocity_scalars": [1.0, 0.75, 0.9, 0.7, 1.0, 0.85, 0.9, 0.7, 1.0, 0.75, 0.9, 0.7, 1.0, 0.85, 0.9, 0.7]
+}

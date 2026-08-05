@@ -1,0 +1,7 @@
+{
+  "id": "trance_uplifting",
+  "resolution": 16,
+  "description": "Uplifting trance drive. Kick locked, off-beat bass/hats slightly late for the classic rolling trance pump.",
+  "offsets_ticks": [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0],
+  "velocity_scalars": [1.0, 0.8, 0.9, 0.75, 1.0, 0.8, 0.9, 0.75, 1.0, 0.8, 0.9, 0.75, 1.0, 0.8, 0.9, 0.75]
+}

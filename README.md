@@ -294,9 +294,9 @@ git push origin dev:main
 git push origin dev:stable
 
 git checkout stable
-python scripts\bump_version.py --patch        # 0.1.0 -> 0.1.1
-python scripts\bump_version.py --patch --tag  # bump + `git tag v0.1.1`
-git push origin stable --tags
+python scripts\bump_version.py --patch --tag  # bump + commit `release: v0.1.1` + annotated tag v0.1.1
+git push origin stable --tags                 # push branch + release tag
+git push origin stable:dev stable:main        # sync dev/main to the release commit
 ```
 
 `--tag` refuses to run unless you are on `stable` (override with

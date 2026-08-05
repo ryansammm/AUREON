@@ -13,7 +13,7 @@ Usage:
     python scripts/bump_version.py --minor              # 0.1.0 -> 0.2.0
     python scripts/bump_version.py --major              # 0.1.0 -> 1.0.0
     python scripts/bump_version.py --set 0.3.0          # explicit version
-    python scripts/bump_version.py --patch --tag        # bump + `git tag v0.1.1`
+    python scripts/bump_version.py --patch --tag        # bump + commit + tag v0.1.1
     python scripts/bump_version.py --patch --dry-run    # preview only
 """
 import argparse
@@ -64,10 +64,30 @@ def write(new: str) -> None:
     print(f"web/frontend/package.json -> version {new}")
 
 
+def git_commit(version: str) -> None:
+    """Commit the version bump as a ``release: vX.Y.Z`` commit."""
+    subprocess.run(
+        ["git", "add", "VERSION", "web/frontend/package.json"],
+        check=True,
+        cwd=ROOT,
+    )
+    subprocess.run(
+        ["git", "commit", "-m", f"release: v{version}"],
+        check=True,
+        cwd=ROOT,
+    )
+    print(f"commit -> release: v{version}")
+
+
 def git_tag(version: str) -> None:
+    """Create an annotated ``vX.Y.Z`` tag at the release commit."""
     tag = f"v{version}"
-    subprocess.run(["git", "tag", tag], check=True, cwd=ROOT)
-    print(f"git tag -> {tag}")
+    subprocess.run(
+        ["git", "tag", "-a", tag, "-m", f"AUREON {version}"],
+        check=True,
+        cwd=ROOT,
+    )
+    print(f"git tag -> {tag} (annotated)")
 
 
 def current_branch() -> str:
@@ -96,7 +116,8 @@ def main(argv=None) -> int:
     group.add_argument("--set", metavar="X.Y.Z",
                        help="set an explicit SemVer version")
     parser.add_argument("--tag", action="store_true",
-                        help="create a git tag v<version> after bumping")
+                        help="commit the bump as 'release: vX.Y.Z' and create "
+                             "an annotated git tag vX.Y.Z after bumping")
     parser.add_argument("--branch", default=RELEASE_BRANCH,
                         help=f"branch release tags must be created on "
                              f"(default: {RELEASE_BRANCH})")
@@ -114,7 +135,7 @@ def main(argv=None) -> int:
     if not SEMVER.match(new):
         parser.error(f"version {new!r} is not valid SemVer")
 
-    print(f"{cur} -> {new}" + (f" (tag v{new} on {args.branch})" if args.tag else ""))
+    print(f"{cur} -> {new}" + (f" (commit + tag v{new} on {args.branch})" if args.tag else ""))
     if args.dry_run:
         return 0
 
@@ -128,6 +149,7 @@ def main(argv=None) -> int:
 
     write(new)
     if args.tag:
+        git_commit(new)
         git_tag(new)
     return 0
 

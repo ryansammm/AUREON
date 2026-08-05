@@ -116,3 +116,19 @@ class TestBumpScript:
         assert rc == 0
         assert mod.VERSION_FILE.read_text().strip() == "0.3.0"
         assert json.loads(mod.PACKAGE_JSON.read_text())["version"] == "0.3.0"
+
+    def test_tag_refuses_non_release_branch(self, tmp_path, monkeypatch):
+        mod = self._load_module()
+        mod.ROOT = tmp_path
+        mod.VERSION_FILE = tmp_path / "VERSION"
+        mod.PACKAGE_JSON = tmp_path / "package.json"
+        mod.VERSION_FILE.write_text("0.1.0\n", encoding="utf-8")
+        mod.PACKAGE_JSON.write_text(
+            json.dumps({"name": "aureon-frontend", "version": "0.1.0"}),
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(mod, "current_branch", lambda: "dev")
+        rc = mod.main(["--patch", "--tag"])
+        assert rc == 1
+        assert mod.VERSION_FILE.read_text().strip() == "0.1.0"
+        assert json.loads(mod.PACKAGE_JSON.read_text())["version"] == "0.1.0"

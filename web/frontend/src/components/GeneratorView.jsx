@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   KEY_NAMES,
   MODES,
@@ -164,7 +164,7 @@ function ToggleCard({ title, sub, on, onToggle, badge, children }) {
   )
 }
 
-function GenreDeck({ groups, groupKeys, genre, selectGenre }) {
+const GenreDeck = memo(function GenreDeck({ groups, groupKeys, genre, selectGenre }) {
   const [active, setActive] = useState(() => {
     for (const k of groupKeys) {
       if ((groups[k] || []).includes(genre)) return k
@@ -303,16 +303,208 @@ function GenreDeck({ groups, groupKeys, genre, selectGenre }) {
       </div>
     </section>
   )
-}
+})
+
+const SoundLab = memo(function SoundLab({
+  config,
+  roles,
+  humanize,
+  ai,
+  prompt,
+  onToggleRole,
+  onSetHumanize,
+  onSetAi,
+  onSetPrompt,
+  onLoadClick,
+}) {
+  return (
+    <aside className="space-y-4 lg:col-span-3">
+      <section className="glass rounded-2xl p-4">
+        <header className="mb-3 flex items-center justify-between">
+          <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+            Voices
+          </h3>
+          <span className="text-[11px] font-semibold tabular-nums text-[#ffb25e]">
+            {roles.length}/{config.roles.length}
+          </span>
+        </header>
+        <div className="grid grid-cols-2 gap-2">
+          {config.roles.map((r) => {
+            const on = roles.includes(r)
+            const c = ROLE_COLORS[r] || '#fff'
+            return (
+              <button
+                key={r}
+                type="button"
+                onClick={() => onToggleRole(r)}
+                className="flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-xs font-semibold transition"
+                style={
+                  on
+                    ? {
+                        borderColor: c,
+                        color: c,
+                        background: `${c}1a`,
+                        boxShadow: `0 0 14px ${hexToRgba(c, 0.18)}`,
+                      }
+                    : {
+                        borderColor: 'rgba(255,255,255,0.08)',
+                        color: '#8a93a6',
+                        background: 'rgba(255,255,255,0.02)',
+                      }
+                }
+              >
+                <span
+                  className="h-2 w-2 shrink-0 rounded-full"
+                  style={{ background: c, boxShadow: on ? `0 0 8px ${c}` : 'none' }}
+                />
+                <span className="truncate">{roleLabel(r)}</span>
+              </button>
+            )
+          })}
+        </div>
+      </section>
+
+      <ToggleCard
+        title="Humanize performance"
+        sub="Velocity & timing micro-variations"
+        on={humanize}
+        onToggle={() => onSetHumanize(!humanize)}
+      />
+
+      <ToggleCard
+        title="AI assistance"
+        sub="Gemini → Groq · ideation + scoring"
+        on={ai}
+        onToggle={() => onSetAi(!ai)}
+        badge="Phase 5"
+      >
+        <textarea
+          className="glass w-full resize-none rounded-lg px-3 py-2 text-sm outline-none focus:border-[#ff7a1a]"
+          rows={2}
+          placeholder="Vibe prompt (optional): dark, cinematic drop with emotional lead…"
+          value={prompt}
+          onChange={(e) => onSetPrompt(e.target.value)}
+        />
+      </ToggleCard>
+
+      <button
+        type="button"
+        className="glass w-full rounded-xl px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-[#ff7a1a]/60 hover:text-[#ffb25e]"
+        onClick={onLoadClick}
+        title="Load project JSON"
+      >
+        📂 Load project JSON
+      </button>
+    </aside>
+  )
+})
+
+const TempoKeyPanel = memo(function TempoKeyPanel({ tonic, mode, bpm, bars, onSetKey, onSetMode, onSetBpm, onSetBars }) {
+  return (
+    <section className="glass rounded-2xl p-4">
+      <h3 className="mb-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+        Tempo &amp; key
+      </h3>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <Field label="Key">
+          <select
+            className="glass w-full rounded-lg px-3 py-2 text-sm outline-none focus:border-[#ff7a1a]"
+            value={tonic}
+            onChange={(e) => onSetKey(e.target.value)}
+          >
+            {KEY_NAMES.map((k) => (
+              <option key={k} value={k}>
+                {k.toUpperCase()}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Mode">
+          <div className="flex rounded-lg border border-white/10 p-0.5">
+            {MODES.map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => onSetMode(m)}
+                className={`flex-1 rounded-md px-2 py-1.5 text-xs font-bold capitalize transition ${
+                  mode === m ? 'bg-[#ff7a1a] text-[#14100a]' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+        </Field>
+        <Field label="BPM" hint={bpm}>
+          <NumberSlider value={bpm} onChange={onSetBpm} min={60} max={200} />
+        </Field>
+        <Field label="Bars" hint={bars}>
+          <NumberSlider value={bars} onChange={onSetBars} min={4} max={280} />
+        </Field>
+      </div>
+    </section>
+  )
+})
+
+const StructurePanel = memo(function StructurePanel({ complexity, candidates, seed, onSetComplexity, onSetCandidates, onSetSeed }) {
+  return (
+    <section className="glass rounded-2xl p-4">
+      <h3 className="mb-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+        Structure
+      </h3>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Field label="Complexity">
+          <div className="flex rounded-lg border border-white/10 p-0.5">
+            {COMPLEXITIES.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => onSetComplexity(c)}
+                className={`flex-1 rounded-md px-2 py-1.5 text-xs font-bold transition ${
+                  complexity === c
+                    ? 'bg-[#ff7a1a] text-[#14100a]'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {COMPLEXITY_LABEL[c]}
+              </button>
+            ))}
+          </div>
+        </Field>
+        <Field label="Candidates" hint={`${candidates} ranked`}>
+          <Slider value={candidates} onChange={onSetCandidates} min={1} max={8} />
+        </Field>
+        <Field label="Seed" hint="0 = random">
+          <div className="flex gap-2">
+            <input
+              type="number"
+              className="glass w-full rounded-lg px-3 py-2 text-sm outline-none focus:border-[#ff7a1a]"
+              value={seed}
+              onChange={(e) => onSetSeed(Number(e.target.value))}
+            />
+            <button
+              type="button"
+              className="glass rounded-lg px-3 text-sm text-slate-300 hover:border-white/30"
+              onClick={() => onSetSeed(Math.floor(Math.random() * 10000))}
+              title="Random seed"
+            >
+              🎲
+            </button>
+          </div>
+        </Field>
+      </div>
+    </section>
+  )
+})
 
 export default function GeneratorView({ config, onGenerate, error, initial }) {
   const [genre, setGenre] = useState(initial?.genre || config.genres[0])
   const def = config.genre_defaults[genre] || { bpm: 140, key: 'a', mode: 'minor' }
 
   const groups = config.genre_groups || {}
-  const groupKeys = Object.keys(groups)
+  const groupKeys = useMemo(() => Object.keys(groups), [groups])
 
-  const selectGenre = (g) => setGenre(g)
+  const selectGenre = useCallback((g) => setGenre(g), [])
 
   const [roles, setRoles] = useState(initial?.roles || ['bass', 'lead', 'drum'])
   const [key, setKey] = useState(initial?.key || def.key)
@@ -326,6 +518,7 @@ export default function GeneratorView({ config, onGenerate, error, initial }) {
   const [ai, setAi] = useState(initial?.ai ?? false)
   const [prompt, setPrompt] = useState(initial?.prompt || '')
   const fileRef = useRef(null)
+  const openProjectFile = useCallback(() => fileRef.current?.click(), [])
 
   const applyParams = (p) => {
     if (!p) return
@@ -364,10 +557,13 @@ export default function GeneratorView({ config, onGenerate, error, initial }) {
     [bars, bpm],
   )
 
-  const toggleRole = (r) =>
-    setRoles((prev) =>
-      prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r],
-    )
+  const toggleRole = useCallback(
+    (r) =>
+      setRoles((prev) =>
+        prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r],
+      ),
+    [],
+  )
 
   const submit = () =>
     onGenerate({
@@ -395,91 +591,25 @@ export default function GeneratorView({ config, onGenerate, error, initial }) {
   return (
     <div className="fade-up grid gap-6 lg:grid-cols-12">
       {/* ─── Sound lab (left) ─── */}
-      <aside className="space-y-4 lg:col-span-3">
-        <section className="glass rounded-2xl p-4">
-          <header className="mb-3 flex items-center justify-between">
-            <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
-              Voices
-            </h3>
-            <span className="text-[11px] font-semibold tabular-nums text-[#ffb25e]">
-              {roles.length}/{config.roles.length}
-            </span>
-          </header>
-          <div className="grid grid-cols-2 gap-2">
-            {config.roles.map((r) => {
-              const on = roles.includes(r)
-              const c = ROLE_COLORS[r] || '#fff'
-              return (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => toggleRole(r)}
-                  className="flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-xs font-semibold transition"
-                  style={
-                    on
-                      ? {
-                          borderColor: c,
-                          color: c,
-                          background: `${c}1a`,
-                          boxShadow: `0 0 14px ${hexToRgba(c, 0.18)}`,
-                        }
-                      : {
-                          borderColor: 'rgba(255,255,255,0.08)',
-                          color: '#8a93a6',
-                          background: 'rgba(255,255,255,0.02)',
-                        }
-                  }
-                >
-                  <span
-                    className="h-2 w-2 shrink-0 rounded-full"
-                    style={{ background: c, boxShadow: on ? `0 0 8px ${c}` : 'none' }}
-                  />
-                  <span className="truncate">{roleLabel(r)}</span>
-                </button>
-              )
-            })}
-          </div>
-        </section>
-
-        <ToggleCard
-          title="Humanize performance"
-          sub="Velocity & timing micro-variations"
-          on={humanize}
-          onToggle={() => setHumanize(!humanize)}
-        />
-
-        <ToggleCard
-          title="AI assistance"
-          sub="Gemini → Groq · ideation + scoring"
-          on={ai}
-          onToggle={() => setAi(!ai)}
-          badge="Phase 5"
-        >
-          <textarea
-            className="glass w-full resize-none rounded-lg px-3 py-2 text-sm outline-none focus:border-[#ff7a1a]"
-            rows={2}
-            placeholder="Vibe prompt (optional): dark, cinematic drop with emotional lead…"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-          />
-        </ToggleCard>
-
-        <button
-          type="button"
-          className="glass w-full rounded-xl px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-[#ff7a1a]/60 hover:text-[#ffb25e]"
-          onClick={() => fileRef.current?.click()}
-          title="Load project JSON"
-        >
-          📂 Load project JSON
-        </button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="application/json,.json"
-          className="hidden"
-          onChange={loadProjectFile}
-        />
-      </aside>
+      <SoundLab
+        config={config}
+        roles={roles}
+        humanize={humanize}
+        ai={ai}
+        prompt={prompt}
+        onToggleRole={toggleRole}
+        onSetHumanize={setHumanize}
+        onSetAi={setAi}
+        onSetPrompt={setPrompt}
+        onLoadClick={openProjectFile}
+      />
+      <input
+        ref={fileRef}
+        type="file"
+        accept="application/json,.json"
+        className="hidden"
+        onChange={loadProjectFile}
+      />
 
       {/* ─── Studio deck (center) ─── */}
       <div className="space-y-6 lg:col-span-6">
@@ -490,95 +620,25 @@ export default function GeneratorView({ config, onGenerate, error, initial }) {
           selectGenre={selectGenre}
         />
 
-        <section className="glass rounded-2xl p-4">
-          <h3 className="mb-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">
-            Tempo &amp; key
-          </h3>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <Field label="Key">
-              <select
-                className="glass w-full rounded-lg px-3 py-2 text-sm outline-none focus:border-[#ff7a1a]"
-                value={key}
-                onChange={(e) => setKey(e.target.value)}
-              >
-                {KEY_NAMES.map((k) => (
-                  <option key={k} value={k}>
-                    {k.toUpperCase()}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Mode">
-              <div className="flex rounded-lg border border-white/10 p-0.5">
-                {MODES.map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => setMode(m)}
-                    className={`flex-1 rounded-md px-2 py-1.5 text-xs font-bold capitalize transition ${
-                      mode === m ? 'bg-[#ff7a1a] text-[#14100a]' : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {m}
-                  </button>
-                ))}
-              </div>
-            </Field>
-            <Field label="BPM" hint={bpm}>
-              <NumberSlider value={bpm} onChange={setBpm} min={60} max={200} />
-            </Field>
-            <Field label="Bars" hint={bars}>
-              <NumberSlider value={bars} onChange={setBars} min={4} max={280} />
-            </Field>
-          </div>
-        </section>
+        <TempoKeyPanel
+          tonic={key}
+          mode={mode}
+          bpm={bpm}
+          bars={bars}
+          onSetKey={setKey}
+          onSetMode={setMode}
+          onSetBpm={setBpm}
+          onSetBars={setBars}
+        />
 
-        <section className="glass rounded-2xl p-4">
-          <h3 className="mb-3 text-[11px] font-bold uppercase tracking-widest text-slate-400">
-            Structure
-          </h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Field label="Complexity">
-              <div className="flex rounded-lg border border-white/10 p-0.5">
-                {COMPLEXITIES.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setComplexity(c)}
-                    className={`flex-1 rounded-md px-2 py-1.5 text-xs font-bold transition ${
-                      complexity === c
-                        ? 'bg-[#ff7a1a] text-[#14100a]'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {COMPLEXITY_LABEL[c]}
-                  </button>
-                ))}
-              </div>
-            </Field>
-            <Field label="Candidates" hint={`${candidates} ranked`}>
-              <Slider value={candidates} onChange={setCandidates} min={1} max={8} />
-            </Field>
-            <Field label="Seed" hint="0 = random">
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  className="glass w-full rounded-lg px-3 py-2 text-sm outline-none focus:border-[#ff7a1a]"
-                  value={seed}
-                  onChange={(e) => setSeed(Number(e.target.value))}
-                />
-                <button
-                  type="button"
-                  className="glass rounded-lg px-3 text-sm text-slate-300 hover:border-white/30"
-                  onClick={() => setSeed(Math.floor(Math.random() * 10000))}
-                  title="Random seed"
-                >
-                  🎲
-                </button>
-              </div>
-            </Field>
-          </div>
-        </section>
+        <StructurePanel
+          complexity={complexity}
+          candidates={candidates}
+          seed={seed}
+          onSetComplexity={setComplexity}
+          onSetCandidates={setCandidates}
+          onSetSeed={setSeed}
+        />
       </div>
 
       {/* ─── Master console (right) ─── */}

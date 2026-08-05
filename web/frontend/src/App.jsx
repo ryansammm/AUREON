@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { fetchConfig, streamGenerate } from './api'
 import { loadHistory, saveHistoryEntry, makeHistoryEntry, removeHistoryEntry } from './history'
 import { log } from './logger'
@@ -125,36 +125,12 @@ export default function App() {
     return view === key
   }
 
-  const particles = useMemo(
-    () =>
-      Array.from({ length: 18 }, (_, i) => ({
-        left: (i * 53 + 17) % 100,
-        size: 2 + ((i * 7) % 4),
-        duration: 12 + ((i * 3) % 9),
-        delay: -((i * 5) % 12),
-      })),
-    [],
-  )
-
   return (
     <div className="bg-aurora relative isolate min-h-full">
       <div className="aurora-layer" aria-hidden="true">
         <div className="aurora-blob blob-1" />
         <div className="aurora-blob blob-2" />
         <div className="aurora-blob blob-3" />
-        {particles.map((p, i) => (
-          <span
-            key={i}
-            className="aurora-particle"
-            style={{
-              left: `${p.left}%`,
-              width: p.size,
-              height: p.size,
-              animationDuration: `${p.duration}s`,
-              animationDelay: `${p.delay}s`,
-            }}
-          />
-        ))}
       </div>
       <header className="sticky top-0 z-20 glass border-b">
         <div className="mx-auto flex max-w-[1560px] flex-wrap items-center justify-between gap-3 px-6 py-3">

@@ -89,7 +89,15 @@ function Start-Vite {
     $out = Join-Path $root "vite.out.log"
     $err = Join-Path $root "vite.err.log"
     $fe = Join-Path $root "web\frontend"
-    $cmd = "cd /d `"$fe`" && npm run dev > `"$out`" 2> `"$err`""
+    $node = (Get-Command node.exe -ErrorAction SilentlyContinue).Source
+    $vite = Join-Path $fe "node_modules\vite\bin\vite.js"
+    if ($node -and (Test-Path $vite)) {
+        # Direct node spawn (no npm/cmd shim) so no stray console window can
+        # appear when Vite (re)starts; see scripts/watchdog.py start_vite().
+        $cmd = "cd /d `"$fe`" && `"$node`" `"$vite`" > `"$out`" 2> `"$err`""
+    } else {
+        $cmd = "cd /d `"$fe`" && npm run dev > `"$out`" 2> `"$err`""
+    }
     Start-Detached $cmd
 }
 
@@ -174,6 +182,9 @@ if ($Watch) {
         Start-Sleep -Milliseconds 1000
         if (Test-Healthy) {
             "server UP on 127.0.0.1:$port (watchdog active)"
+            "NOTE: the app runs as a detached background service and will"
+            "      restart itself. Closing this terminal does NOT stop it."
+            "      Stop everything with:  .\scripts\dev.ps1 -Stop"
             exit 0
         }
     }

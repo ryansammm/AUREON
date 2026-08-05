@@ -30,6 +30,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import signal
 import socket
 import subprocess
@@ -211,7 +212,19 @@ def start_server(port: int) -> None:
 
 
 def start_vite() -> None:
-    spawn(["npm", "run", "dev"], ROOT / "web" / "frontend",
+    # Launch Vite via node directly, NOT through `npm run dev`. npm wraps the
+    # script in `cmd.exe /d /s /c vite`; when that cmd-shim runs under
+    # DETACHED_PROCESS it has no console to inherit, so Windows 11 (Windows
+    # Terminal as default) opens a brand-new visible terminal window on every
+    # Vite start/restart. `node vite.js` spawns no cmd shim, and Vite's esbuild
+    # child already uses windowsHide, so no console ever appears.
+    node = shutil.which("node")
+    vite = ROOT / "web" / "frontend" / "node_modules" / "vite" / "bin" / "vite.js"
+    if not node or not vite.is_file():
+        spawn(["npm", "run", "dev"], ROOT / "web" / "frontend",
+              ROOT / "vite.out.log", ROOT / "vite.err.log")
+        return
+    spawn([node, str(vite)], ROOT / "web" / "frontend",
           ROOT / "vite.out.log", ROOT / "vite.err.log")
 
 

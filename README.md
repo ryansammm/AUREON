@@ -281,18 +281,27 @@ all read from it, and `web/frontend/package.json` is kept in sync.
 - **CLI** — `python cli.py --version`
 - **UI** — version shown in the footer
 
-Bump a release with:
+Branches:
+- **`dev`** — day-to-day development.
+- **`main`** — deployed to Vercel (frontend on Vercel, Flask backend elsewhere).
+- **`stable`** — releases are cut from here.
+
+To ship: merge/push `dev` → `main` (deploy) and `dev` → `stable`, then cut the
+release on `stable`:
 
 ```powershell
+git push origin dev:main
+git push origin dev:stable
+
+git checkout stable
 python scripts\bump_version.py --patch        # 0.1.0 -> 0.1.1
-python scripts\bump_version.py --minor        # 0.1.0 -> 0.2.0
-python scripts\bump_version.py --major        # 0.1.0 -> 1.0.0
-python scripts\bump_version.py --set 0.3.0    # explicit version
-python scripts\bump_version.py --patch --tag  # also `git tag v0.1.1`
+python scripts\bump_version.py --patch --tag  # bump + `git tag v0.1.1`
+git push origin stable --tags
 ```
 
-Use `--dry-run` to preview. `tests/test_versioning.py` fails if the VERSION
-file, engine, frontend and API ever drift out of sync.
+`--tag` refuses to run unless you are on `stable` (override with
+`--branch <name>`). Use `--dry-run` to preview. `tests/test_versioning.py`
+fails if the VERSION file, engine, frontend and API ever drift out of sync.
 
 ## Architecture
 

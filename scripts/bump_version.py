@@ -4,7 +4,11 @@ The single source of truth is the root ``VERSION`` file. This script
 updates it (SemVer), mirrors the number into ``web/frontend/package.json``
 so the whole app ships one version, and can tag the release.
 
+Releases are cut from the ``stable`` branch: ``--tag`` refuses to run on
+any other branch so release tags always point at stable.
+
 Usage:
+    git checkout stable
     python scripts/bump_version.py --patch              # 0.1.0 -> 0.1.1
     python scripts/bump_version.py --minor              # 0.1.0 -> 0.2.0
     python scripts/bump_version.py --major              # 0.1.0 -> 1.0.0
@@ -16,11 +20,13 @@ import argparse
 import json
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 VERSION_FILE = ROOT / "VERSION"
 PACKAGE_JSON = ROOT / "web" / "frontend" / "package.json"
+RELEASE_BRANCH = "stable"
 
 SEMVER = re.compile(
     r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"
@@ -64,6 +70,17 @@ def git_tag(version: str) -> None:
     print(f"git tag -> {tag}")
 
 
+def current_branch() -> str:
+    """Return the current git branch ('' when in detached HEAD)."""
+    proc = subprocess.run(
+        ["git", "symbolic-ref", "--short", "HEAD"],
+        capture_output=True,
+        text=True,
+        cwd=ROOT,
+    )
+    return proc.stdout.strip() if proc.returncode == 0 else ""
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         prog="bump_version",
@@ -79,9 +96,12 @@ def main(argv=None) -> int:
     group.add_argument("--set", metavar="X.Y.Z",
                        help="set an explicit SemVer version")
     parser.add_argument("--tag", action="store_true",
-                       help="create a git tag v<version> after bumping")
+                        help="create a git tag v<version> after bumping")
+    parser.add_argument("--branch", default=RELEASE_BRANCH,
+                        help=f"branch release tags must be created on "
+                             f"(default: {RELEASE_BRANCH})")
     parser.add_argument("--dry-run", action="store_true",
-                       help="print what would change without writing anything")
+                        help="print what would change without writing anything")
     args = parser.parse_args(argv)
 
     cur = current()
@@ -94,9 +114,17 @@ def main(argv=None) -> int:
     if not SEMVER.match(new):
         parser.error(f"version {new!r} is not valid SemVer")
 
-    print(f"{cur} -> {new}" + (f" (tag v{new})" if args.tag else ""))
+    print(f"{cur} -> {new}" + (f" (tag v{new} on {args.branch})" if args.tag else ""))
     if args.dry_run:
         return 0
+
+    if args.tag and current_branch() != args.branch:
+        print(
+            f"error: releases must be tagged from '{args.branch}', "
+            f"current branch is '{current_branch()}'",
+            file=sys.stderr,
+        )
+        return 1
 
     write(new)
     if args.tag:

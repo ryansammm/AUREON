@@ -235,6 +235,31 @@ With no key the engine stays 100% rule-based.
 python -m pytest -q     # --timeout=120 always on via pytest.ini
 ```
 
+## Versioning
+
+AUREON uses [Semantic Versioning](https://semver.org/). The single source of
+truth is the root `VERSION` file (e.g. `0.1.0`); the engine, API, CLI and UI
+all read from it, and `web/frontend/package.json` is kept in sync.
+
+- **Engine** — `engine.__version__` (re-exported from `engine/version.py`)
+- **API** — `GET /api/version` returns `{name, version, commit, dirty,
+  build_time, python}`; `/api/config` also carries `app_version`
+- **CLI** — `python cli.py --version`
+- **UI** — version shown in the footer
+
+Bump a release with:
+
+```powershell
+python scripts\bump_version.py --patch        # 0.1.0 -> 0.1.1
+python scripts\bump_version.py --minor        # 0.1.0 -> 0.2.0
+python scripts\bump_version.py --major        # 0.1.0 -> 1.0.0
+python scripts\bump_version.py --set 0.3.0    # explicit version
+python scripts\bump_version.py --patch --tag  # also `git tag v0.1.1`
+```
+
+Use `--dry-run` to preview. `tests/test_versioning.py` fails if the VERSION
+file, engine, frontend and API ever drift out of sync.
+
 ## Architecture
 
 Layer-based pipeline (`engine/`), each layer independently testable:

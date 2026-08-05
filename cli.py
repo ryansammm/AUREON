@@ -19,6 +19,7 @@ from engine.pipeline import (
     generate_track,
 )
 from engine.selector import CandidateGenerator, Selector
+from engine.version import __version__
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -62,6 +63,12 @@ def build_parser() -> argparse.ArgumentParser:
                         help="Phase 5: let the LLM re-score candidate ranking "
                              "(needs --ai and --candidates > 1)")
     parser.add_argument("-v", "--verbose", action="store_true", help="show warning logs")
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"aureon {__version__}",
+        help="print version and exit",
+    )
     return parser
 
 

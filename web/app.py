@@ -2,7 +2,8 @@
 
 Backend contract for the React frontend:
 
-- ``GET  /api/config``          -> genres (+ defaults), roles, bpm map
+- ``GET  /api/config``          -> genres (+ defaults), roles, bpm map, app version
+- ``GET  /api/version``         -> app version + build metadata (commit, build time)
 - ``POST /api/generate``        -> generate + rank a composition (JSON body)
 - ``POST /api/generate/stream`` -> same, but streams SSE progress events
 - ``GET  /api/track/<file>``    -> download a single-role MIDI stem
@@ -39,6 +40,9 @@ from engine.exporter import export_midi  # noqa: E402
 from engine.ideation import LLMIdeator  # noqa: E402
 from engine.pipeline import build_tempo_map  # noqa: E402
 from engine.selector import CandidateGenerator, Selector  # noqa: E402
+from engine.version import get_version_info  # noqa: E402
+
+VERSION_INFO = get_version_info()
 
 app = Flask(__name__, static_folder=None)
 app.config["OUTPUT_DIR"] = ROOT / "output"
@@ -416,7 +420,13 @@ def api_config():
         "genre_defaults": genre_defaults(),
         "roles": ROLES,
         "gain_defaults": GAIN_DEFAULTS,
+        "app_version": VERSION_INFO.version,
     })
+
+
+@app.route("/api/version")
+def api_version():
+    return jsonify(VERSION_INFO.as_dict())
 
 
 MAX_GENERATION_SECONDS = 300.0

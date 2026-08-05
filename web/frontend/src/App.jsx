@@ -244,6 +244,8 @@ export default function App() {
         )}
       </main>
       <footer className="py-6 text-center text-xs text-slate-500/70">
+        AUREON <span className="font-semibold text-slate-400">v{config?.app_version || 'dev'}</span>
+        <span className="mx-2">·</span>
         Developed by <span className="font-semibold text-slate-400">XYKS</span>
       </footer>
       <LogViewer open={logOpen} onClose={() => setLogOpen(false)} />

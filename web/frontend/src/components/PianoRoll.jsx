@@ -25,21 +25,30 @@ export default function PianoRoll({ tracks, bpm, totalBeats, height = 380 }) {
   const [scroll, setScroll] = useState(0)
   const [hover, setHover] = useState(null)
   const dragRef = useRef(null)
+  const hoverRafRef = useRef(0)
+  const pendingHoverRef = useRef(null)
 
   const viewW = barsVisible * BEATS_PER_BAR * PX
 
-  const { minPitch, maxPitch, notes } = useMemo(() => {
+  const { minPitch, maxPitch, notes, byPitch, maxDurByPitch } = useMemo(() => {
     let mn = 60
     let mx = 60
     const all = []
+    const byPitch = new Map()
+    const maxDurByPitch = new Map()
     for (const t of tracks || []) {
       for (const [p, s, d] of t.midi) {
-        all.push({ role: t.role, pitch: p, start: s, dur: d })
+        const note = { role: t.role, pitch: p, start: s, dur: d }
+        all.push(note)
         if (p < mn) mn = p
         if (p > mx) mx = p
+        if (!byPitch.has(p)) byPitch.set(p, [])
+        byPitch.get(p).push(note)
+        maxDurByPitch.set(p, Math.max(maxDurByPitch.get(p) || 0, d))
       }
     }
-    return { minPitch: mn - 2, maxPitch: mx + 2, notes: all }
+    for (const arr of byPitch.values()) arr.sort((a, b) => a.start - b.start)
+    return { minPitch: mn - 2, maxPitch: mx + 2, notes: all, byPitch, maxDurByPitch }
   }, [tracks])
 
   const rowH = 10
@@ -140,6 +149,37 @@ export default function PianoRoll({ tracks, bpm, totalBeats, height = 380 }) {
     draw()
   }, [draw])
 
+  useEffect(
+    () => () => {
+      if (hoverRafRef.current) cancelAnimationFrame(hoverRafRef.current)
+    },
+    [],
+  )
+
+  function findNote(beat, pitch) {
+    const arr = byPitch.get(pitch)
+    if (!arr || !arr.length) return null
+    const minStart = beat - (maxDurByPitch.get(pitch) || 0)
+    let lo = 0
+    let hi = arr.length - 1
+    let lastLe = -1
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1
+      if (arr[mid].start <= beat) {
+        lastLe = mid
+        lo = mid + 1
+      } else {
+        hi = mid - 1
+      }
+    }
+    for (let i = lastLe; i >= 0; i--) {
+      const n = arr[i]
+      if (n.start < minStart) break
+      if (beat <= n.start + n.dur) return n
+    }
+    return null
+  }
+
   function onMouseDown(e) {
     dragRef.current = { startX: e.clientX, startScroll: scroll }
     e.currentTarget.style.cursor = 'grabbing'
@@ -155,21 +195,32 @@ export default function PianoRoll({ tracks, bpm, totalBeats, height = 380 }) {
       return
     }
     const rect = canvas.getBoundingClientRect()
-    const beat = (e.clientX - rect.left + scroll) / PX
-    const relY = e.clientY - rect.top - rulerH
-    const pitch = Math.round(maxPitch - relY / rowH)
-    const found = notes.find((n) => beat >= n.start && beat <= n.start + n.dur && pitch === n.pitch)
-    if (found) {
-      setHover({
-        name: noteName(found.pitch),
-        role: found.role,
-        bar: Math.floor(beat / BEATS_PER_BAR) + 1,
-        beats: beat.toFixed(1),
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
+    pendingHoverRef.current = {
+      beat: (e.clientX - rect.left + scroll) / PX,
+      pitch: Math.round(maxPitch - (e.clientY - rect.top - rulerH) / rowH),
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    }
+    if (!hoverRafRef.current) {
+      hoverRafRef.current = requestAnimationFrame(() => {
+        hoverRafRef.current = 0
+        const p = pendingHoverRef.current
+        pendingHoverRef.current = null
+        if (!p) return
+        const found = findNote(p.beat, p.pitch)
+        if (found) {
+          setHover({
+            name: noteName(found.pitch),
+            role: found.role,
+            bar: Math.floor(p.beat / BEATS_PER_BAR) + 1,
+            beats: p.beat.toFixed(1),
+            x: p.x,
+            y: p.y,
+          })
+        } else {
+          setHover(null)
+        }
       })
-    } else {
-      setHover(null)
     }
   }
 

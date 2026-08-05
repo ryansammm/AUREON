@@ -1,20 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { wavUrl, fetchWithTimeout } from '../api'
 import { log } from '../logger'
-
-function computePeaks(data, count) {
-  const block = Math.floor(data.length / count)
-  const peaks = new Array(count)
-  for (let i = 0; i < count; i++) {
-    let max = 0
-    for (let j = 0; j < block; j++) {
-      const v = Math.abs(data[i * block + j])
-      if (v > max) max = v
-    }
-    peaks[i] = max
-  }
-  return peaks
-}
+import { computePeaks } from '../waveformWorker'
 
 export default function WaveformPlayer({ file, accent = '#ff7a1a', height = 96, autoLabel }) {
   const src = wavUrl(file)
@@ -27,6 +14,7 @@ export default function WaveformPlayer({ file, accent = '#ff7a1a', height = 96, 
   const [duration, setDuration] = useState(0)
   const [error, setError] = useState(false)
   const rafRef = useRef(null)
+  const workerRef = useRef(null)
 
   // Store state in refs so draw can read latest without changing identity
   const progressRef = useRef(progress)
@@ -111,11 +99,31 @@ export default function WaveformPlayer({ file, accent = '#ff7a1a', height = 96, 
         const Ctx = window.AudioContext || window.webkitAudioContext
         const ctx = new Ctx()
         const decoded = await ctx.decodeAudioData(buf)
-        peaksRef.current = computePeaks(decoded.getChannelData(0), 900)
+        if (cancelled) return
+        const duration = decoded.duration
+        const channel = decoded.getChannelData(0)
         ctx.close().catch(() => {})
-        setLoading(false)
-        log.info('WAVEFORM_LOADED', { file, duration: decoded.duration.toFixed(2) })
-        draw()
+        log.info('WAVEFORM_LOADED', { file, duration: duration.toFixed(2) })
+        try {
+          // Peaks computed off the main thread so long files don't hitch the UI.
+          const worker = new Worker(new URL('../waveformWorker.js', import.meta.url), {
+            type: 'module',
+          })
+          workerRef.current = worker
+          worker.onmessage = (e) => {
+            if (cancelled) return
+            peaksRef.current = e.data.peaks
+            setLoading(false)
+            draw()
+          }
+          worker.postMessage({ data: channel, count: 900 }, [channel.buffer])
+        } catch {
+          if (cancelled) return
+          // Worker unavailable (very old browser) — fall back to main thread.
+          peaksRef.current = computePeaks(channel, 900)
+          setLoading(false)
+          draw()
+        }
       } catch (e) {
         log.error('WAVEFORM_FAILED', { file, error: String(e) })
         setLoading(false)
@@ -130,7 +138,6 @@ export default function WaveformPlayer({ file, accent = '#ff7a1a', height = 96, 
       if (audio.duration) {
         setProgress(audio.currentTime)
         setDuration(audio.duration)
-        draw()
       }
     }
     audio.addEventListener('play', onPlay)
@@ -145,6 +152,8 @@ export default function WaveformPlayer({ file, accent = '#ff7a1a', height = 96, 
       audio.removeEventListener('pause', onPause)
       audio.removeEventListener('ended', onEnded)
       audio.removeEventListener('timeupdate', onTime)
+      workerRef.current?.terminate()
+      workerRef.current = null
       cancelAnimationFrame(rafRef.current)
     }
   }, [src, draw])
@@ -176,7 +185,6 @@ export default function WaveformPlayer({ file, accent = '#ff7a1a', height = 96, 
     if (audio.duration) {
       audio.currentTime = ratio * audio.duration
       setProgress(audio.currentTime)
-      draw()
     }
   }
 

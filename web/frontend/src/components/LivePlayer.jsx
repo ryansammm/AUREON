@@ -177,16 +177,13 @@ export default function LivePlayer({ mid, roles = [] }) {
       }
       plan.sort((a, b) => a.start - b.start)
 
-      const state = { instruments, fallbackSynth, synths }
-      stateRef.current = state
-
-      const schedule = (n) => {
+      const schedule = (n, time) => {
         if (DRUM_ROLES.has(n.role)) {
           if (synths) triggerDrum(synths, n.note, n.vel)
         } else {
           const inst = instruments[n.role] || null
           if (inst) {
-            inst.play(n.note, Tone.now(), {
+            inst.play(n.note, time, {
               duration: Math.min(Math.max(n.dur, 0.15), 2.5),
               velocity: 0.5 + 0.5 * (n.vel / 127),
               gain: 0.55,
@@ -195,13 +192,30 @@ export default function LivePlayer({ mid, roles = [] }) {
             fallbackSynth.triggerAttackRelease(
               Tone.Frequency(n.note, 'midi').toNote(),
               Math.min(Math.max(n.dur, 0.15), 2.5),
-              Tone.now(),
+              time,
               n.vel / 127,
             )
           }
         }
       }
-      for (const n of plan) Tone.getTransport().scheduleAtTime(() => schedule(n), n.start)
+
+      // One Tone.Part per role instead of one scheduleAtTime callback per
+      // note — Tone internally ticks through the event list once, so a long
+      // composition (thousands of notes) schedules in O(roles) not O(notes).
+      const parts = []
+      const byRole = new Map()
+      for (const n of plan) {
+        if (!byRole.has(n.role)) byRole.set(n.role, [])
+        byRole.get(n.role).push([n.start, n])
+      }
+      for (const [role, events] of byRole) {
+        const part = new Tone.Part((time, n) => schedule(n, time), events)
+        part.start(0)
+        parts.push(part)
+      }
+
+      const state = { instruments, fallbackSynth, synths, parts }
+      stateRef.current = state
 
       const end = plan.length ? Math.max(...plan.map((p) => p.start + p.dur)) : 0
       Tone.getTransport().start()
@@ -231,8 +245,16 @@ export default function LivePlayer({ mid, roles = [] }) {
     } catch {
       /* ignore */
     }
-    const { instruments, fallbackSynth, synths } = stateRef.current
+    const { instruments, fallbackSynth, synths, parts } = stateRef.current
     stateRef.current = {}
+    Object.values(parts || {}).forEach((part) => {
+      try {
+        part.stop(0)
+        part.dispose()
+      } catch {
+        /* ignore */
+      }
+    })
     Object.values(instruments || {}).forEach((inst) => {
       try {
         inst.stop && inst.stop()

@@ -31,6 +31,7 @@ class TestFallback:
         monkeypatch.delenv("AUREON_SOUNDFONT", raising=False)
         monkeypatch.setattr(sf_render, "_COMMON_BINS", [])
         monkeypatch.setattr(sf_render, "_COMMON_SF_DIRS", [])
+        monkeypatch.setattr(sf_render.shutil, "which", lambda name: None)
 
         mid = tmp_path / "in.mid"
         mid.write_bytes(b"dummy")
@@ -64,6 +65,7 @@ class TestFallback:
         monkeypatch.delenv("AUREON_SOUNDFONT", raising=False)
         monkeypatch.setattr(sf_render, "_COMMON_BINS", [])
         monkeypatch.setattr(sf_render, "_COMMON_SF_DIRS", [])
+        monkeypatch.setattr(sf_render.shutil, "which", lambda name: None)
 
         status = sf_render.renderer_status()
         assert status["available"] is False

@@ -1,0 +1,14 @@
+# Vercel only builds + serves the React frontend (web/frontend/dist).
+# The Python/Flask backend runs locally or on a VPS — excluding it here
+# also stops Vercel from auto-detecting a Flask project (which requires
+# a Python entrypoint and would fail the build).
+engine/
+web/app.py
+config/
+tests/
+tools/
+scripts/
+cli.py
+requirements.txt
+AUREON.bat
+setup.bat

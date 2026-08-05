@@ -191,8 +191,10 @@ threaded server that renders with FluidSynth and writes files to disk — so it
 must run on a machine Vercel can reach (VPS, home server, Railway, Fly.io).
 
 1. Push `main` (the branch Vercel deploys).
-2. Import the repo in Vercel — it auto-detects the root `package.json`
-   (`npm run build` → installs `web/frontend` deps + `vite build`).
+2. Import the repo in Vercel — `vercel.json` sets `"framework": null` and
+   `"buildCommand": "npm run build"`, so Vercel builds `web/frontend`
+   (`npm ci` → `vite build`) instead of trying to deploy the Flask backend.
+   `.vercelignore` keeps the Python backend out of the upload entirely.
 3. Add a `BACKEND_URL` environment variable in the Vercel project settings
    pointing at your public backend origin, e.g. `https://aureon-backend.example.com`
    (no trailing slash).

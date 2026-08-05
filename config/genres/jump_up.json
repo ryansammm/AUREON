@@ -43,5 +43,11 @@
       "label": "Drums - Punchy (Jump Up)",
       "preset": "dnb_kit / punchy"
     }
-  }
+  },
+  "bass_drum_interlock": {
+    "mode": "lock",
+    "lock_probability": 0.6
+  },
+  "groove_profile": "dnb_breakneck",
+  "groove_strength": 0.9
 }

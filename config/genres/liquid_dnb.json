@@ -52,5 +52,11 @@
       "label": "Drums - Breakbeat (Liquid)",
       "preset": "dnb_kit / smooth"
     }
-  }
+  },
+  "bass_drum_interlock": {
+    "mode": "syncopate",
+    "lock_probability": 0.4
+  },
+  "groove_profile": "dnb_breakneck",
+  "groove_strength": 0.8
 }

@@ -48,5 +48,11 @@
       "label": "Drums - Hard (Euphoric)",
       "preset": "hardstyle_kit / clean"
     }
-  }
+  },
+  "bass_drum_interlock": {
+    "mode": "lock",
+    "lock_probability": 0.95
+  },
+  "groove_profile": "hardstyle_pumping",
+  "groove_strength": 0.9
 }

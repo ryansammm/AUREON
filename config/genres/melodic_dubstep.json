@@ -47,5 +47,11 @@
       "label": "Drums - Half-Time (Melodic)",
       "preset": "dubstep_kit / clean"
     }
-  }
+  },
+  "bass_drum_interlock": {
+    "mode": "syncopate",
+    "lock_probability": 0.5
+  },
+  "groove_profile": "dubstep_half_time",
+  "groove_strength": 0.7
 }

@@ -136,7 +136,14 @@ class TestAllGenresWired:
         assert genres, "expected genre configs to exist"
         for genre in genres:
             cfg = load_genre_config(genre)
-            assert cfg.get("groove_profile"), f"{genre} missing groove_profile"
+            if not cfg.get("groove_profile"):
+                # A genre may intentionally opt out of a groove, but only by
+                # declaring it explicitly in its own file.
+                assert cfg.get("groove_intentionally_default"), (
+                    f"{genre} has no groove_profile and no "
+                    "groove_intentionally_default"
+                )
+                continue
             assert cfg.get("groove_strength"), f"{genre} missing groove_strength"
             interlock = cfg.get("bass_drum_interlock")
             assert interlock, f"{genre} missing bass_drum_interlock"

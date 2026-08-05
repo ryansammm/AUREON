@@ -42,5 +42,7 @@
       "label": "Percussion - Lo-Fi",
       "preset": "vinyl_crackle"
     }
-  }
+  },
+  "groove_profile": null,
+  "groove_intentionally_default": "lo-fi rides loose, swung MPC-style humanization and tape drift instead of a locked groove/interlock"
 }

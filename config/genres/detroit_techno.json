@@ -39,5 +39,11 @@
       "label": "Drums - Classic (Detroit)",
       "preset": "909_kit"
     }
-  }
+  },
+  "bass_drum_interlock": {
+    "mode": "lock",
+    "lock_probability": 0.9
+  },
+  "groove_profile": "techno_driving",
+  "groove_strength": 0.85
 }

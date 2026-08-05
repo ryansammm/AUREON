@@ -37,5 +37,11 @@
       "label": "Drums - Tech House 4x4",
       "preset": "tech_house_kit / 909"
     }
-  }
+  },
+  "bass_drum_interlock": {
+    "mode": "lock",
+    "lock_probability": 0.75
+  },
+  "groove_profile": "house_four_on_floor",
+  "groove_strength": 0.85
 }

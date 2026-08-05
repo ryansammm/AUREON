@@ -41,5 +41,11 @@
       "label": "Drums - Ghetto Tech",
       "preset": "ghetto_kit / distorted"
     }
-  }
+  },
+  "bass_drum_interlock": {
+    "mode": "lock",
+    "lock_probability": 0.7
+  },
+  "groove_profile": "future_bass_bright",
+  "groove_strength": 0.85
 }

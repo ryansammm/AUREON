@@ -39,5 +39,11 @@
       "label": "Drums - Driving (Acid)",
       "preset": "909_kit / distorted"
     }
-  }
+  },
+  "bass_drum_interlock": {
+    "mode": "lock",
+    "lock_probability": 0.85
+  },
+  "groove_profile": "techno_driving",
+  "groove_strength": 0.9
 }

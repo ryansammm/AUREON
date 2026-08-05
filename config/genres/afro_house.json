@@ -43,5 +43,11 @@
       "label": "Percussion - Afro",
       "preset": "conga / bongo / shaker"
     }
-  }
+  },
+  "bass_drum_interlock": {
+    "mode": "lock",
+    "lock_probability": 0.9
+  },
+  "groove_profile": "house_four_on_floor",
+  "groove_strength": 0.8
 }

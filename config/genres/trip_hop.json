@@ -42,5 +42,11 @@
       "label": "Percussion - Vinyl",
       "preset": "vinyl_crackle / percussion"
     }
-  }
+  },
+  "bass_drum_interlock": {
+    "mode": "syncopate",
+    "lock_probability": 0.5
+  },
+  "groove_profile": "downtempo_chill",
+  "groove_strength": 0.6
 }

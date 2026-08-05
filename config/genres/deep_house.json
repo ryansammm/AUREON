@@ -39,5 +39,11 @@
       "label": "Drums - Deep House",
       "preset": "deep_kit / 909"
     }
-  }
+  },
+  "bass_drum_interlock": {
+    "mode": "lock",
+    "lock_probability": 0.8
+  },
+  "groove_profile": "house_four_on_floor",
+  "groove_strength": 0.7
 }

@@ -45,5 +45,11 @@
       "label": "Drums - Bassline 4x4",
       "preset": "ukg_kit / 4x4"
     }
-  }
+  },
+  "bass_drum_interlock": {
+    "mode": "lock",
+    "lock_probability": 0.6
+  },
+  "groove_profile": "uk_garage_shuffle",
+  "groove_strength": 0.9
 }

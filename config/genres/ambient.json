@@ -50,5 +50,7 @@
       "label": "Drums - Sparse (Ambient)",
       "preset": "ambient_kit / minimal"
     }
-  }
+  },
+  "groove_profile": null,
+  "groove_intentionally_default": "ambient textures are deliberately non-rhythmic — no kick-locked groove or bass/drum interlock applies"
 }

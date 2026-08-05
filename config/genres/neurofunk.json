@@ -44,5 +44,11 @@
       "label": "Drums - Tight (Neurofunk)",
       "preset": "dnb_kit / tight"
     }
-  }
+  },
+  "bass_drum_interlock": {
+    "mode": "syncopate",
+    "lock_probability": 0.35
+  },
+  "groove_profile": "dnb_breakneck",
+  "groove_strength": 0.85
 }

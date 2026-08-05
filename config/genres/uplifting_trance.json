@@ -43,5 +43,11 @@
       "label": "Drums - Uplifting 4x4",
       "preset": "trance_kit / 909"
     }
-  }
+  },
+  "bass_drum_interlock": {
+    "mode": "lock",
+    "lock_probability": 0.9
+  },
+  "groove_profile": "trance_uplifting",
+  "groove_strength": 0.9
 }

@@ -45,5 +45,11 @@
       "label": "Drums - Speed Garage",
       "preset": "ukg_kit / shuffled"
     }
-  }
+  },
+  "bass_drum_interlock": {
+    "mode": "syncopate",
+    "lock_probability": 0.5
+  },
+  "groove_profile": "uk_garage_shuffle",
+  "groove_strength": 0.85
 }

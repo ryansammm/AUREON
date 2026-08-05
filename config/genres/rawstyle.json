@@ -44,5 +44,11 @@
       "label": "Drums - Hard (Rawstyle)",
       "preset": "hardstyle_kit / distorted"
     }
-  }
+  },
+  "bass_drum_interlock": {
+    "mode": "lock",
+    "lock_probability": 0.9
+  },
+  "groove_profile": "hardstyle_pumping",
+  "groove_strength": 0.95
 }

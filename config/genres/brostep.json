@@ -39,5 +39,11 @@
       "label": "Drums - Aggressive (Brostep)",
       "preset": "dubstep_kit / distorted"
     }
-  }
+  },
+  "bass_drum_interlock": {
+    "mode": "lock",
+    "lock_probability": 0.7
+  },
+  "groove_profile": "dubstep_half_time",
+  "groove_strength": 0.9
 }

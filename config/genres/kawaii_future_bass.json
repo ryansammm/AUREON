@@ -49,5 +49,11 @@
       "label": "Drums - Kawaii",
       "preset": "kawaii_kit / 808"
     }
-  }
+  },
+  "bass_drum_interlock": {
+    "mode": "syncopate",
+    "lock_probability": 0.5
+  },
+  "groove_profile": "future_bass_bright",
+  "groove_strength": 0.6
 }
